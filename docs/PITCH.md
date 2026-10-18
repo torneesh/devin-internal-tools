@@ -36,7 +36,7 @@ Each new bespoke tool raises the odds of hitting one of these.
 
 ## Pillar 2: Beyond the building blocks: custom logic, tested (1:45–2:25)
 **Claim:** When a tool needs logic the building blocks don't cover, it's ordinary code on the platform, with tests in CI.
-**Evidence (refunds, as a worked example):**
+**Evidence (refunds, chosen deliberately as their riskiest workflow: money movement, not a form):**
 - No self-approval; a second approver over the threshold.
 - Payment provider times out → `UNKNOWN` → reconcile → a retry **doesn't pay twice**.
 - The test suite runs on screen; each rule is a named test.
@@ -76,7 +76,7 @@ Full detail: `docs/EVALUATION.md`.
 1. **Week 0:** licence audit (users, plan mix, renewal date) and **list the next 10 tools**, classified as simple forms vs. custom logic/integration.
 2. **Weeks 1–6 (Devin + 1 owning engineer):**
    - Harden the platform: real SSO, Postgres, deploy, monitoring.
-   - Build **2 of the new tools** on it and migrate the feature-flag admin.
+   - Build **the highest-value tool on their list first, on their real systems** (real provider, real data, real edge cases), then one more and the feature-flag migration. The prototype proved the mechanism on mocks; this proves delivery. If Devin handles the hardest tool, the easier ones aren't in question; if it can't, they find out in weeks, not at renewal.
    - **Gate:** eng-weeks per tool, owner hours, incidents.
 3. All new tools go on the platform. Refunds next; KYC after a pen test. Drop Power Apps at renewal **only if the gate passes**.
 4. **If you choose Buy:** optimise the licence (per-app or pay-as-you-go for light users). Devin still fits for custom connectors, code components and Azure Functions, which is where Power Apps teams hit code anyway.
