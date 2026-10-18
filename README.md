@@ -36,7 +36,7 @@ Sign in at `/login` by choosing a seeded user. This is mock SSO.
 Each step maps to a demo moment in `docs/PITCH.md`.
 
 **Pillar 1: governance is built once and every tool inherits it (≈40s)**
-1. Sign in as **alice** (support agent). The home page shows only the tools she's allowed to use. Open Refunds: she can request a refund, but she can't approve one or reveal a bank account.
+1. Sign in as **alice** (support agent). On the home page, the tools she can't use are greyed out as "No access". Open Refunds: she can request a refund, but she can't approve one or reveal a bank account.
 2. Switch to **bob** (approver) and open refund `TXN-10412`. The bank account shows as `••••2606`. Click **Reveal**: you must give a reason, and the full value appears.
 3. Switch to **ivan** (auditor) and open **Audit log** (`/audit`). The `reveal` event shows who revealed the value, when and why. Audit rows can't be edited or deleted, because database triggers reject `UPDATE` and `DELETE` on `audit_events`.
 4. Change one masking rule. In `core/masking.py`, change `"refunds.bank_account"` from `mask=last4` to `mask=redact_all` and save. `make run` uses `--reload`, so the server restarts. Every refunds table and detail page now shows `••••••`. The database survives the reload, but the in-memory mock provider is reset. `tests/core/test_masking.py::test_changing_one_policy_changes_every_page` proves the same thing.
@@ -45,7 +45,7 @@ Each step maps to a demo moment in `docs/PITCH.md`.
 
 5. Self-approval: sign in as **admin**, request a refund, then try to approve it. The request is blocked: "You can't approve your own request (separation of duties)".
 6. Two approvers over $1,000: as **bob**, approve `TXN-10388` ($2,400). It stays at 1 of 2 approvals. Bob can't approve it a second time. When **carol** approves, it moves to `APPROVED`.
-7. Payment timeout without a double payment: as **bob**, open `TXN-10412` and set the provider mode to **timeout_after_accept**. Click **Execute payment**. The provider took the money but its response was lost, so the status is `UNKNOWN`, not `FAILED`. Click **Reconcile**. The platform looks up the payment by idempotency key, and the status becomes `SUCCEEDED`. If you click **Execute payment** again instead of reconciling, the same key is reused and the provider records a single payment.
+7. Payment timeout without a double payment: as **bob**, open `TXN-10412` and set the provider mode to **timeout_after_accept**. Click **Execute payment**. The provider took the money but its response was lost, so the status is `UNKNOWN`, not `FAILED`. Click **Reconcile**. The platform looks up the payment by idempotency key, and the status becomes `SUCCEEDED`. If you click **Execute payment** again instead of reconciling, the same key is reused; `test_retry_never_pays_twice` checks that the provider was paid once (the mock has no ledger page).
 8. Run `make test`. Each rule has a named test: `test_requester_cannot_approve_own_refund`, `test_retry_never_pays_twice` and the others. CI runs the same suite on every PR.
 
 **Pillar 3: the tool factory (≈40s)**
@@ -79,7 +79,7 @@ Stack: Python 3.11, FastAPI, SQLAlchemy 2.0, SQLite (the schema is Postgres-comp
 This is a prototype, not a production platform.
 - **Identity:** sign-in is a mock user picker with roles from `seed.py`. There's no real SSO (Entra/OIDC), MFA, group sync or session hardening.
 - **Data:** it uses SQLite with `create_all`. There's no Postgres, no migrations (Alembic) and no backups. Append-only audit is enforced by SQLite triggers. Postgres would need equivalent triggers or grants, and that isn't built.
-- **Integrations are mocks.** The payment provider and the flag service live in memory and reset when the app restarts.
+- **Integrations are mocks.** The payment provider and the flag service live in memory and reset when the app restarts (including the `--reload` in demo step 4), so flag pages can say SYNCED while the mock service is empty until the next push.
 - **Masking:** a policy change is a code change and a deploy, not an admin setting. A reveal returns the raw value to the browser, and there's no rate limit or approval step for reveals.
 - **No equivalent** of DLP policies, managed environments, deployment, monitoring or alerting. It hasn't had a pen test or a vendor security review. `docs/EVALUATION.md` sizes this work.
 - **Governance relies on discipline.** Controls are inherited only if each tool follows `AGENTS.md`. Review and the required rule tests are the control point, as `docs/FACTORY_RESULTS.md` shows. Branch protection and required reviewers aren't configured in this repo.
