@@ -19,7 +19,19 @@ make test    # pytest: platform tests plus each tool's rule tests
 make lint    # ruff check + ruff format --check (same checks as CI)
 ```
 
-Sign in at `/login` by choosing a seeded user. This is mock SSO.
+`make run` uses a mock sign-in: pick a seeded user on `/login`. Tests use the same mode.
+
+### Real SSO (OpenID Connect via Keycloak)
+Needs Docker. Keycloak stands in for the client's identity provider (Entra ID or Okta); it needs no Azure tenant.
+
+```bash
+make sso       # starts Keycloak on :8080 with the realm in sso/realm.json
+make run-sso   # http://localhost:8000, signs in through Keycloak
+```
+
+Sign in as any user below with password `demo`. Each Keycloak **group** grants the app role of the same name. On each sign-in the app syncs the user's roles from the ID token's `groups` claim and audits any change, so moving someone between groups in the Keycloak admin console (http://localhost:8080, `admin`/`admin`) changes their access on their next sign-in. MFA is a Keycloak setting (Authentication → Required actions → Configure OTP). Switching to Entra ID means changing `OIDC_ISSUER`, `OIDC_CLIENT_ID` and `OIDC_CLIENT_SECRET`, plus a groups claim on the app registration. The credentials in `sso/realm.json` and the `Makefile` are local demo values only.
+
+Both modes seed about 50 refunds, 40 KYC cases and 13 flags of fake data (Faker, fixed seed) across every status. Set `FAKE_DATA=0` for only the hand-written examples.
 
 | User | Roles |
 |---|---|
@@ -73,11 +85,11 @@ tools/<name>/          models.py, service.py, router.py, templates/, tests/ (+ a
 
 Each request goes through these steps. The route's `require_role` dependency checks the role. Then a service function runs `ensure_role`, checks the business rules and validates the state transition. It writes with `update_versioned` and `audit.record` in the same transaction, then commits. Templates use the shared macros, which apply `FIELD_POLICIES`, so a tool can't render a protected field unmasked by accident.
 
-Stack: Python 3.11, FastAPI, SQLAlchemy 2.0, SQLite (the schema is Postgres-compatible), Jinja2, HTMX and Pico.css. There is no frontend build step. Tests use pytest, linting uses Ruff, and CI runs on GitHub Actions.
+Stack: Python 3.11, FastAPI, SQLAlchemy 2.0, SQLite (the schema is Postgres-compatible), Jinja2, HTMX, Pico.css with a Fluent-style shell (header, left menu, stage bar), Authlib for OIDC and Faker for demo data. There is no frontend build step. Tests use pytest, linting uses Ruff, and CI runs on GitHub Actions.
 
 ## Known gaps
 This is a prototype, not a production platform.
-- **Identity:** sign-in is a mock user picker with roles from `seed.py`. There's no real SSO (Entra/OIDC), MFA, group sync or session hardening.
+- **Identity:** OIDC sign-in and group-to-role sync work against a local Keycloak, not the client's Entra ID. Roles sync only at sign-in, so removing someone from a group takes effect at their next sign-in or when the 8-hour session expires. There's no SCIM deprovisioning or Conditional Access, and MFA is configured in the IdP, not enforced by the app. `make run` and the tests still use the mock user picker.
 - **Data:** it uses SQLite with `create_all`. There's no Postgres, no migrations (Alembic) and no backups. Append-only audit is enforced by SQLite triggers. Postgres would need equivalent triggers or grants, and that isn't built.
 - **Integrations are mocks.** The payment provider and the flag service live in memory and reset when the app restarts (including the `--reload` in demo step 4), so flag pages can say SYNCED while the mock service is empty until the next push.
 - **Masking:** a policy change is a code change and a deploy, not an admin setting. A reveal returns the raw value to the browser, and there's no rate limit or approval step for reveals.

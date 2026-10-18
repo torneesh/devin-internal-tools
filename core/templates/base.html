@@ -8,18 +8,47 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
   <script src="https://unpkg.com/htmx.org@2.0.4"></script>
   <style>
-    :root { --pico-font-size: 95%; }
-    nav select { margin: 0; padding-top: .3rem; padding-bottom: .3rem; min-width: 18rem; }
+    :root { --pico-font-size: 92%; --pico-font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif;
+            --pico-primary: #0f6cbd; --pico-primary-background: #0f6cbd; --pico-primary-hover-background: #115ea3;
+            --pico-primary-border: #0f6cbd; --pico-border-radius: .25rem; }
+    body { background: #f5f5f5; }
+    .appbar { display: flex; align-items: center; gap: 1rem; height: 3rem; padding: 0 1rem; background: #0f6cbd; color: #fff; }
+    .appbar a, .appbar strong { color: #fff; text-decoration: none; }
+    .appbar .waffle { font-size: 1.2rem; letter-spacing: -.1rem; opacity: .9; }
+    .appbar .divider { width: 1px; height: 1.4rem; background: rgba(255,255,255,.4); }
+    .appbar .spacer { flex: 1; }
+    .appbar select { margin: 0; padding: .2rem 2rem .2rem .6rem; height: 2rem; min-width: 16rem; font-size: .85rem; }
+    .appbar .who { font-size: .85rem; text-align: right; line-height: 1.1; }
+    .appbar .who small { opacity: .85; }
+    .appbar .avatar { width: 2rem; height: 2rem; border-radius: 50%; background: #fff; color: #0f6cbd; display: grid; place-items: center; font-weight: 700; }
+    .appbar button { margin: 0; padding: .25rem .8rem; font-size: .8rem; background: transparent; border: 1px solid rgba(255,255,255,.6); color: #fff; }
+    .shell { display: grid; grid-template-columns: 13rem 1fr; min-height: calc(100vh - 3rem); }
+    .sitemap { display: flex; flex-direction: column; background: #fff; border-right: 1px solid #e0e0e0; padding: .75rem 0; }
+    .sitemap h6 { margin: .75rem 1rem .25rem; font-size: .7rem; text-transform: uppercase; color: #616161; letter-spacing: .05em; }
+    .sitemap a { display: block; padding: .45rem 1rem; color: #242424; text-decoration: none; border-left: 3px solid transparent; font-size: .9rem; }
+    .sitemap a:hover { background: #f0f0f0; }
+    .sitemap a.active { border-left-color: #0f6cbd; background: #ebf3fc; font-weight: 600; }
+    .content { padding: 1.25rem 1.5rem; max-width: 90rem; }
+    .content article { box-shadow: 0 1px 2px rgba(0,0,0,.12), 0 0 2px rgba(0,0,0,.08); border-radius: .5rem; }
+    .content table { background: #fff; }
     .flash { padding: .75rem 1rem; margin-bottom: 1rem; }
-    .flash-success { border-left: 4px solid #2e7d32; }
-    .flash-error { border-left: 4px solid #c62828; }
-    .error { color: #c62828; }
-    .status { padding: .1rem .5rem; border-radius: .3rem; font-size: .8rem; font-weight: 600; }
-    .status-requested, .status-open, .status-pending { background: #e3f2fd; }
-    .status-approved, .status-submitted { background: #fff3e0; }
-    .status-succeeded, .status-done { background: #e8f5e9; }
-    .status-failed, .status-rejected { background: #ffebee; }
-    .status-unknown, .status-escalated { background: #fde68a; }
+    .flash-success { border-left: 4px solid #107c10; }
+    .flash-error { border-left: 4px solid #c50f1f; }
+    .error { color: #c50f1f; }
+    .status { padding: .1rem .5rem; border-radius: 1rem; font-size: .75rem; font-weight: 600; }
+    .status-requested, .status-open, .status-pending { background: #ebf3fc; color: #0f548c; }
+    .status-approved, .status-submitted, .status-in_review { background: #fff4ce; color: #835b00; }
+    .status-succeeded, .status-done, .status-synced, .status-on { background: #dff6dd; color: #0e700e; }
+    .status-failed, .status-rejected { background: #fde7e9; color: #b10e1c; }
+    .status-unknown, .status-escalated { background: #fed9cc; color: #8a3707; }
+    .stages { display: flex; margin: 0 0 1.25rem; padding: .6rem; background: #fff; border-radius: .5rem; box-shadow: 0 1px 2px rgba(0,0,0,.12); list-style: none; gap: .25rem; }
+    .stages li { flex: 1; list-style: none; margin: 0; padding: .45rem .75rem; text-align: center; font-size: .85rem; color: #616161; background: #f5f5f5;
+                 clip-path: polygon(0 0, calc(100% - .8rem) 0, 100% 50%, calc(100% - .8rem) 100%, 0 100%, .8rem 50%); }
+    .stages li:first-child { clip-path: polygon(0 0, calc(100% - .8rem) 0, 100% 50%, calc(100% - .8rem) 100%, 0 100%); }
+    .stages li.done { background: #dff6dd; color: #0e700e; }
+    .stages li.current { background: #0f6cbd; color: #fff; font-weight: 600; }
+    .stages li.warn { background: #f7630c; color: #fff; font-weight: 600; }
+    .stages li.bad { background: #c50f1f; color: #fff; font-weight: 600; }
     .masked details { display: inline-block; margin: 0 0 0 .5rem; vertical-align: middle; }
     .masked details summary { padding: .1rem .6rem; font-size: .8rem; }
     .masked form { margin-top: .5rem; min-width: 22rem; }
@@ -27,40 +56,51 @@
     .action-form { display: flex; gap: .5rem; margin: 0; }
     .action-form input, .action-form select, .action-form button { margin: 0; width: auto; }
     dl.detail { display: grid; grid-template-columns: max-content 1fr; gap: .4rem 1.5rem; }
-    dl.detail dt { font-weight: 600; }
+    dl.detail dt { font-weight: 600; color: #424242; }
     dl.detail dd { margin: 0; }
     table.audit td { font-size: .85rem; vertical-align: top; }
+    .signin { max-width: 32rem; margin: 3rem auto; }
   </style>
 </head>
 <body>
-<header class="container">
-  <nav>
-    <ul>
-      <li><a href="/"><strong>Internal Tools</strong></a></li>
-      {% for t in nav_tools %}<li><a href="{{ t.path }}">{{ t.name }}</a></li>{% endfor %}
-      {% if user and user.has_role('auditor') %}<li><a href="/audit">Audit log</a></li>{% endif %}
-    </ul>
-    {% if user %}
-    <ul>
-      <li>
-        <form method="post" action="/login" style="margin:0">
-          <input type="hidden" name="next" value="{{ request.url.path }}">
-          <select name="username" onchange="this.form.submit()" aria-label="Signed in as" title="Mock SSO: switch user">
-            {% for u in all_users %}
-            <option value="{{ u.username }}" {% if u.username == user.username %}selected{% endif %}>
-              {{ u.username }} · {{ 'all roles' if u.roles|length > 3 else u.roles|sort|join(', ') }}
-            </option>
-            {% endfor %}
-          </select>
-        </form>
-      </li>
-    </ul>
+<header class="appbar">
+  <span class="waffle" aria-hidden="true">⋮⋮⋮</span>
+  <a href="/"><strong>Internal Tools</strong></a>
+  <span class="divider"></span>
+  <span>{{ self.title() }}</span>
+  <span class="spacer"></span>
+  {% if user %}
+    {% if sso %}
+      <span class="who">{{ user.display_name }}<br><small>{{ 'all roles' if user.roles|length > 3 else user.roles|sort|join(', ') or 'no roles' }} · SSO</small></span>
+      <span class="avatar" aria-hidden="true">{{ user.display_name[:1] }}</span>
+      <form method="post" action="/logout" style="margin:0"><button type="submit">Sign out</button></form>
+    {% else %}
+      <form method="post" action="/login" style="margin:0">
+        <input type="hidden" name="next" value="{{ request.url.path }}">
+        <select name="username" onchange="this.form.submit()" aria-label="Signed in as" title="Mock sign-in: switch user">
+          {% for u in all_users %}
+          <option value="{{ u.username }}" {% if u.username == user.username %}selected{% endif %}>
+            {{ u.username }} · {{ 'all roles' if u.roles|length > 3 else u.roles|sort|join(', ') }}
+          </option>
+          {% endfor %}
+        </select>
+      </form>
     {% endif %}
-  </nav>
+  {% endif %}
 </header>
-<main class="container">
-  {% for f in flashes %}<article class="flash flash-{{ f.kind }}">{{ f.message }}</article>{% endfor %}
-  {% block content %}{% endblock %}
-</main>
+<div class="shell">
+  <aside class="sitemap" aria-label="Tools">
+    {% if user %}
+    <a href="/" class="{{ 'active' if request.url.path == '/' }}">Home</a>
+    <h6>Tools</h6>
+    {% for t in nav_tools %}<a href="{{ t.path }}" class="{{ 'active' if request.url.path.startswith(t.path) }}">{{ t.name }}</a>{% endfor %}
+    {% if user.has_role('auditor') %}<h6>Governance</h6><a href="/audit" class="{{ 'active' if request.url.path.startswith('/audit') }}">Audit log</a>{% endif %}
+    {% endif %}
+  </aside>
+  <main class="content">
+    {% for f in flashes %}<article class="flash flash-{{ f.kind }}">{{ f.message }}</article>{% endfor %}
+    {% block content %}{% endblock %}
+  </main>
+</div>
 </body>
 </html>

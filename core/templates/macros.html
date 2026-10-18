@@ -4,6 +4,20 @@
 <mark class="status status-{{ status|lower }}">{{ status }}</mark>
 {%- endmacro %}
 
+{# Business-process stage bar. stages: list of (label, [statuses]); warn/bad: statuses shown
+   as an off-track current stage (e.g. UNKNOWN, REJECTED). The last stage is the success end. #}
+{% macro stage_bar(stages, status, warn=(), bad=()) -%}
+{%- set ns = namespace(at=0) -%}
+{%- for label, statuses in stages %}{% if status in statuses %}{% set ns.at = loop.index0 %}{% endif %}{% endfor -%}
+{%- set finished = status in stages[-1][1] and status not in bad -%}
+<ol class="stages" aria-label="Process stage">
+  {%- for label, statuses in stages %}
+  {%- set kind = "done" if loop.index0 < ns.at or finished else ("bad" if status in bad else "warn" if status in warn else "current") if loop.index0 == ns.at else "" %}
+  <li class="{{ kind }}" {% if loop.index0 == ns.at %}aria-current="step"{% endif %}>{{ status|replace("_", " ")|title if loop.index0 == ns.at and (status in bad or status in warn) else label }}</li>
+  {%- endfor %}
+</ol>
+{%- endmacro %}
+
 {# A protected field: always masked; "Reveal" (reason required, audited) for permitted roles. #}
 {% macro masked_field(entity, obj, field, user) -%}
 <span id="mf-{{ entity }}-{{ obj.id }}-{{ field }}" class="masked">

@@ -10,7 +10,7 @@ from core.auth import load_user
 @pytest.fixture
 def app():
     """A fresh app on an in-memory database, seeded, with every tool (and _template) mounted."""
-    return create_app("sqlite://", include_template=True)
+    return create_app("sqlite://", include_template=True, fake_data=False)
 
 
 @pytest.fixture

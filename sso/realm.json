@@ -1,0 +1,264 @@
+{
+  "realm": "internal-tools",
+  "enabled": true,
+  "displayName": "Internal Tools SSO",
+  "sslRequired": "none",
+  "loginWithEmailAllowed": true,
+  "bruteForceProtected": true,
+  "ssoSessionIdleTimeout": 28800,
+  "groups": [
+    {
+      "name": "support_agent",
+      "path": "/support_agent"
+    },
+    {
+      "name": "refund_approver",
+      "path": "/refund_approver"
+    },
+    {
+      "name": "kyc_analyst",
+      "path": "/kyc_analyst"
+    },
+    {
+      "name": "kyc_supervisor",
+      "path": "/kyc_supervisor"
+    },
+    {
+      "name": "engineer",
+      "path": "/engineer"
+    },
+    {
+      "name": "release_manager",
+      "path": "/release_manager"
+    },
+    {
+      "name": "auditor",
+      "path": "/auditor"
+    }
+  ],
+  "users": [
+    {
+      "username": "alice",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Alice",
+      "lastName": "Support",
+      "email": "alice@example.com",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "demo",
+          "temporary": false
+        }
+      ],
+      "groups": [
+        "/support_agent"
+      ]
+    },
+    {
+      "username": "bob",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Bob",
+      "lastName": "Refund approver",
+      "email": "bob@example.com",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "demo",
+          "temporary": false
+        }
+      ],
+      "groups": [
+        "/refund_approver"
+      ]
+    },
+    {
+      "username": "carol",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Carol",
+      "lastName": "Refund approver",
+      "email": "carol@example.com",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "demo",
+          "temporary": false
+        }
+      ],
+      "groups": [
+        "/refund_approver"
+      ]
+    },
+    {
+      "username": "dave",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Dave",
+      "lastName": "KYC analyst",
+      "email": "dave@example.com",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "demo",
+          "temporary": false
+        }
+      ],
+      "groups": [
+        "/kyc_analyst"
+      ]
+    },
+    {
+      "username": "erin",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Erin",
+      "lastName": "KYC supervisor",
+      "email": "erin@example.com",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "demo",
+          "temporary": false
+        }
+      ],
+      "groups": [
+        "/kyc_supervisor"
+      ]
+    },
+    {
+      "username": "frank",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Frank",
+      "lastName": "Engineer",
+      "email": "frank@example.com",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "demo",
+          "temporary": false
+        }
+      ],
+      "groups": [
+        "/engineer"
+      ]
+    },
+    {
+      "username": "grace",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Grace",
+      "lastName": "Release manager",
+      "email": "grace@example.com",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "demo",
+          "temporary": false
+        }
+      ],
+      "groups": [
+        "/release_manager"
+      ]
+    },
+    {
+      "username": "heidi",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Heidi",
+      "lastName": "KYC analyst",
+      "email": "heidi@example.com",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "demo",
+          "temporary": false
+        }
+      ],
+      "groups": [
+        "/kyc_analyst"
+      ]
+    },
+    {
+      "username": "ivan",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Ivan",
+      "lastName": "Auditor",
+      "email": "ivan@example.com",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "demo",
+          "temporary": false
+        }
+      ],
+      "groups": [
+        "/auditor"
+      ]
+    },
+    {
+      "username": "admin",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Admin",
+      "lastName": "Account",
+      "email": "admin@example.com",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "demo",
+          "temporary": false
+        }
+      ],
+      "groups": [
+        "/support_agent",
+        "/refund_approver",
+        "/kyc_analyst",
+        "/kyc_supervisor",
+        "/engineer",
+        "/release_manager",
+        "/auditor"
+      ]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "internal-tools",
+      "name": "Internal Tools",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "dev-only-client-secret",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": [
+        "http://localhost:8000/auth/callback"
+      ],
+      "webOrigins": [
+        "+"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:8000/login"
+      },
+      "protocolMappers": [
+        {
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "config": {
+            "claim.name": "groups",
+            "full.path": "false",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ]
+}

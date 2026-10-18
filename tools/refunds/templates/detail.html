@@ -6,6 +6,9 @@
   <h2>Refund #{{ refund.id }} {{ ui.status_badge(refund.status) }}</h2>
   <p><a href="/refunds">← All refunds</a></p>
 </hgroup>
+{{ ui.stage_bar([("Requested", ["REQUESTED"]), ("Approved", ["APPROVED", "REJECTED"]),
+                 ("Payment sent", ["SUBMITTED", "UNKNOWN", "FAILED"]), ("Paid", ["SUCCEEDED"])],
+                refund.status, warn=["UNKNOWN"], bad=["REJECTED", "FAILED"]) }}
 
 <div class="grid">
   <article>

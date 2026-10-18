@@ -31,7 +31,7 @@ USERS = [
 ]
 
 
-def seed(db: Session) -> None:
+def seed(db: Session, fake_data: bool = False) -> None:
     if db.scalar(select(func.count()).select_from(User)):
         return
     for username, display_name, roles in USERS:
@@ -40,6 +40,8 @@ def seed(db: Session) -> None:
     seed_refunds(db)
     seed_kyc(db)
     seed_flags(db)
+    if fake_data:
+        seed_fake(db)
 
 
 def seed_refunds(db: Session) -> None:
@@ -136,3 +138,119 @@ def seed_flags(db: Session) -> None:
     service.create_flag(
         db, frank, key="payments.retry-v2", description="New retry policy for card payments"
     )
+
+
+def seed_fake(db: Session, n_refunds: int = 45, n_cases: int = 35) -> None:
+    """Bulk fake records (Faker, fixed seed) created through the services, so every row has a
+    real audit trail and passed the same rules as a user action. All identities are fake."""
+    import random
+
+    from faker import Faker
+
+    from tools.flags import service as flags
+    from tools.kyc import service as kyc
+    from tools.refunds import service as refunds
+
+    rng = random.Random(42)
+    Faker.seed(42)
+    fake = Faker(["en_GB", "de_DE", "fr_FR", "it_IT", "es_ES", "nl_NL"])
+    u = {name: load_user(db, name) for name, _, _ in USERS}
+    reasons = [
+        "Charged twice for the same order",
+        "Order cancelled before shipping",
+        "Item never arrived",
+        "Subscription cancelled within cooling-off period",
+        "Service outage credit",
+        "Duplicate card authorisation captured",
+        "Fee charged in error",
+    ]
+
+    for i in range(n_refunds):
+        large = rng.random() < 0.3
+        r = refunds.create_refund(
+            db,
+            u["alice"],
+            txn_id=f"TXN-{11000 + i}",
+            customer_name=fake.name(),
+            bank_account=fake.iban(),
+            amount_cents=rng.randint(120_000, 900_000) if large else rng.randint(500, 95_000),
+            reason=rng.choice(reasons),
+        )
+        outcome = rng.choices(
+            ["requested", "half", "approved", "rejected", "paid", "failed", "unknown"],
+            weights=[5, 2 if large else 0, 3, 2, 8, 1, 1],
+        )[0]
+        if outcome == "requested":
+            continue
+        if outcome == "rejected":
+            refunds.reject(db, u["bob"], r.id, r.version, "Outside refund policy window")
+            continue
+        r = refunds.approve(db, u["bob"], r.id, r.version)
+        if outcome == "half":
+            continue
+        if large:
+            r = refunds.approve(db, u["carol"], r.id, r.version)
+        if outcome == "approved":
+            continue
+        mode = {"failed": "fail", "unknown": "timeout_after_accept"}.get(outcome, "ok")
+        r = refunds.set_provider_mode(db, u["bob"], r.id, r.version, mode)
+        refunds.execute(db, u["carol"] if large else u["bob"], r.id, r.version)
+
+    docs = [kyc.DOC_UPLOADED] * 6 + [kyc.DOC_MISSING, kyc.DOC_UNREADABLE]
+    for _ in range(n_cases):
+        locale = rng.choice(fake.locales)
+        f = fake[locale]
+        case = kyc.create_case(
+            db,
+            u["erin"],
+            customer_name=f.name(),
+            date_of_birth=f.date_of_birth(minimum_age=18, maximum_age=80).isoformat(),
+            government_id=f.bothify("??#######").upper(),
+            country=locale.split("_")[1],
+            document_status=rng.choice(docs),
+        )
+        outcome = rng.choices(
+            ["open", "review", "escalated", "approved", "rejected", "resolved"],
+            weights=[8, 4, 3, 10, 3, 2],
+        )[0]
+        if outcome == "open":
+            continue
+        analyst = u[rng.choice(["dave", "heidi"])]
+        case = kyc.claim(db, analyst, case.id, case.version)
+        if outcome == "review":
+            continue
+        if outcome == "approved" and case.document_status == kyc.DOC_UPLOADED:
+            kyc.approve(db, analyst, case.id, case.version, "ID and selfie match; sanctions clear")
+        elif outcome in ("approved", "rejected"):
+            kyc.reject(db, analyst, case.id, case.version, "Documents do not match application")
+        else:
+            case = kyc.escalate(db, analyst, case.id, case.version, "Possible sanctions match")
+            if outcome == "resolved":
+                kyc.resolve(
+                    db, u["erin"], case.id, case.version, kyc.REJECTED, "Confirmed sanctions hit"
+                )
+
+    for key, description in [
+        ("payments.3ds-v2", "3-D Secure 2 challenge flow"),
+        ("payments.instant-payouts", "Instant payouts to debit cards"),
+        ("onboarding.selfie-check", "Liveness check during onboarding"),
+        ("onboarding.address-autocomplete", "Address autocomplete on sign-up"),
+        ("cards.virtual-cards", "Issue virtual cards in-app"),
+        ("cards.spend-limits", "Per-card spend limits"),
+        ("ledger.async-posting", "Post ledger entries asynchronously"),
+        ("fraud.velocity-rules-v3", "New transaction velocity rules"),
+        ("support.chat-handoff", "Bot-to-agent chat handoff"),
+        ("billing.annual-plans", "Annual billing option"),
+    ]:
+        flag = flags.create_flag(db, u["frank"], key=key, description=description)
+        if rng.random() < 0.7:
+            state = flags.set_enabled(
+                db, u["frank"], flag.id, "staging", flag.state("staging").version, True
+            )
+            flags.set_rollout(db, u["frank"], flag.id, "staging", state.version, 100)
+        if rng.random() < 0.4:
+            state = flags.set_enabled(
+                db, u["grace"], flag.id, "production", flag.state("production").version, True
+            )
+            pct = rng.choice([5, 10, 25, 50, 100])
+            flags.set_rollout(db, u["grace"], flag.id, "production", state.version, pct)

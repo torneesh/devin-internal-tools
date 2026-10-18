@@ -6,6 +6,9 @@
   <h2>KYC case #{{ case.id }} {{ ui.status_badge(case.status) }}</h2>
   <p><a href="/kyc">← Queue</a></p>
 </hgroup>
+{{ ui.stage_bar([("Open", ["OPEN"]), ("In review", ["IN_REVIEW", "ESCALATED"]),
+                 ("Decision", ["APPROVED", "REJECTED"])],
+                case.status, warn=["ESCALATED"], bad=["REJECTED"]) }}
 
 {% set is_claimant = case.status == "IN_REVIEW" and case.assigned_to == user.username and user.has_role('kyc_analyst') %}
 <div class="grid">

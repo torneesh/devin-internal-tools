@@ -13,7 +13,7 @@ from fastapi import APIRouter, Depends, FastAPI, Request
 from sqlalchemy.orm import Session
 from starlette.middleware.sessions import SessionMiddleware
 
-from core import audit, auth, errors, masking, registry
+from core import audit, auth, errors, masking, registry, sso
 from core.auth import CurrentUser, require_role
 from core.db import Base, get_db, make_engine, make_sessionmaker
 from core.ui import page
@@ -55,15 +55,25 @@ def discover_tools(include_template: bool = False) -> list[str]:
 
 
 def create_app(
-    database_url: str | None = None, *, include_template: bool = False, seed_data: bool = True
+    database_url: str | None = None,
+    *,
+    include_template: bool = False,
+    seed_data: bool = True,
+    fake_data: bool | None = None,
+    sso_config: sso.SsoConfig | None = None,
 ) -> FastAPI:
     app = FastAPI(title="Internal Tools")
     app.add_middleware(
         SessionMiddleware,
         secret_key=os.environ.get("SESSION_SECRET", "dev-only-not-a-secret"),
         same_site="lax",
+        max_age=8 * 3600,
+        https_only=os.environ.get("SESSION_HTTPS_ONLY") == "1",
     )
     errors.install(app)
+    app.state.sso = sso_config or sso.config_from_env()
+    if app.state.sso:
+        app.include_router(sso.build_router(app.state.sso))
     for router in (auth.router, masking.router, registry.router, audit_router):
         app.include_router(router)
     for name in discover_tools(include_template):
@@ -77,5 +87,7 @@ def create_app(
         import seed
 
         with app.state.SessionLocal() as db:
-            seed.seed(db)
+            if fake_data is None:
+                fake_data = os.environ.get("FAKE_DATA", "1") == "1"
+            seed.seed(db, fake_data=fake_data)
     return app

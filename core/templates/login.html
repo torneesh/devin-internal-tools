@@ -1,8 +1,17 @@
 {% extends "base.html" %}
 {% block title %}Sign in{% endblock %}
 {% block content %}
+{% if sso %}
+<article class="signin">
+  <h2>Sign in</h2>
+  <p>Sign in with your company account. Your identity provider decides who you are and which
+     groups you are in; each group grants a role in these tools.</p>
+  <a href="/auth/login" role="button">Sign in with SSO</a>
+  <p><small>Identity provider: <code>{{ sso.issuer }}</code></small></p>
+</article>
+{% else %}
 <h2>Sign in</h2>
-<p>Mock SSO for the prototype. Pick a user. In production this is your identity provider (Entra ID or Okta via OIDC).</p>
+<p>Mock sign-in for tests and quick demos: pick a user. Run <code>make run-sso</code> for real SSO.</p>
 <table class="striped">
   <thead><tr><th>User</th><th>Roles</th><th></th></tr></thead>
   <tbody>
@@ -20,4 +29,5 @@
   {% endfor %}
   </tbody>
 </table>
+{% endif %}
 {% endblock %}

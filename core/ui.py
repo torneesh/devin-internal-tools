@@ -66,6 +66,7 @@ def page(request: Request, template: str, status_code: int = 200, **context):
         "all_users": users,
         "nav_tools": registry.visible_tools(user),
         "flashes": request.session.pop("_flash", []),
+        "sso": getattr(request.app.state, "sso", None),
         **context,
     }
     return templates.TemplateResponse(request, template, context, status_code=status_code)
