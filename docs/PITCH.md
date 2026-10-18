@@ -60,11 +60,11 @@ Full detail: `docs/EVALUATION.md`.
 | Dimension | Power Apps better | Devin-built better |
 |---|---|---|
 | **Build cost** | Upfront: no platform to build (Build needs ~12.5 eng-weeks + a pen test). Simple forms/CRUD | Each *custom* tool: no connectors or workarounds. Running cost ~$212K vs $421K/yr by Y3; 3-yr $1.04M vs $1.20M (Y1 is +$220K for Build) |
-| **Maintenance** | Platform: Microsoft hosts, patches, attests | Apps at 13+: tests, code review, Devin does upgrades across every tool. Still needs a ~0.5 FTE owner |
+| **Maintenance** | Platform: Microsoft hosts, patches, attests | Apps at 13+: tests, code review, Devin does upgrades across every tool. Owner budgeted at ~0.5 FTE; if Devin writes the upkeep PRs, ~0.15 FTE of review |
 | **Security** | **Safe by default**: SSO, DLP, column security and audit are configuration | Fits their SDLC and runs in their infrastructure, but **only with discipline**: pen test, branch protection, mandatory rule tests, review of every Devin PR. Devin itself needs a vendor review |
-| **Engineering time** | **~0.65 FTE less in Y1, ~0.2 FTE less ongoing.** The strongest argument for Buy | Licence savings (~$200K/yr) roughly fund one engineer; complex Power Apps work consumes engineers anyway |
+| **Engineering time** | **Base case: ~0.65 FTE less in Y1, ~0.2 FTE less ongoing.** The strongest argument for Buy | Licence savings (~$200K/yr) roughly fund one engineer; complex Power Apps work consumes engineers anyway; **if the owner only reviews Devin's upkeep PRs (~0.15 FTE), Build needs fewer engineers from Y2** (0.36 vs 0.52 FTE) |
 
-> **Net:** Build trades ~$200K/yr of licence for ~0.2 FTE of extra engineering and ownership of the security surface. Worth it only if the next tools are mostly custom and the licence really scales with users. Phase 1 exists to measure exactly that.
+> **Net:** Build trades ~$200K/yr of licence for ~0.2 FTE of extra engineering and ownership of the security surface. Worth it only if the next tools are mostly custom and the licence really scales with users. Phase 1 exists to measure exactly that. If Devin carries the upkeep, the trade becomes ~$260–290K/yr less spend *and* fewer engineers; the pilot measures which.
 
 ## What would flip this to Buy (4:00–4:15)
 - **The next 10 tools are mostly simple forms/CRUD.** Building blocks are as fast and need no owner.
@@ -73,11 +73,11 @@ Full detail: `docs/EVALUATION.md`.
 - No team can own the platform, or auditors require Microsoft's attestations.
 
 ## Next steps, and where Devin fits (4:15–5:00)
-1. **Week 0:** licence audit (users, plan mix, renewal date) and **list the next 10 tools**, classified as simple forms vs. custom logic/integration.
+1. **Week 0:** licence audit (users, plan mix, renewal date) and **list the next 10 tools**, classified as simple forms vs. custom logic/integration, with their Power Apps effort estimate for the first tools as the baseline. Plus four compliance questions: card data (PCI scope)? EU-regulated (DORA)? already on Managed Environments? who owns their SOC 2 scope? (`docs/COMPLIANCE.md`)
 2. **Weeks 1–6 (Devin + 1 owning engineer):**
    - Harden the platform: real SSO, Postgres, deploy, monitoring.
    - Build **the highest-value tool on their list first, on their real systems** (real provider, real data, real edge cases), then one more and the feature-flag migration. The prototype proved the mechanism on mocks; this proves delivery. If Devin handles the hardest tool, the easier ones aren't in question; if it can't, they find out in weeks, not at renewal.
-   - **Gate:** eng-weeks per tool, owner hours, incidents.
+   - **Gate** (`docs/SUCCESS_METRICS.md`): human hours per tool ≤ 20% of their Power Apps estimate, owner load ≤ 0.15–0.25 FTE, no high-severity control failures, Devin spend < 25% of the engineering cost it saves.
 3. All new tools go on the platform. Refunds next; KYC after a pen test. Drop Power Apps at renewal **only if the gate passes**.
 4. **If you choose Buy:** optimise the licence (per-app or pay-as-you-go for light users). Devin still fits for custom connectors, code components and Azure Functions, which is where Power Apps teams hit code anyway.
 

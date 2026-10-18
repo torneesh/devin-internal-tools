@@ -32,11 +32,19 @@ Grouped by stage. A suggested one-page cut is at the bottom.
 **A6. Express opportunity cost in engineer-weeks, not adjectives.** **6/10**
 - *Why:* "engineering time" is the strongest argument for Buy (+0.65 FTE in Y1, +0.2 FTE ongoing). Putting a number on it forced me to concede it plainly.
 
+**A7. Track success as human engineering hours saved, not licence saved.** **8/10**
+- *Why:* Cognition's claim is that Devin cuts the engineers needed. The cost model's biggest lever is owner time: at 0.5 FTE, Build costs $1.04M and uses more engineers than Buy; at 0.15 FTE it's $794K and uses fewer from Y2 (0.36 vs 0.52 FTE). So the pilot gate measures human hours per tool and owner hours per month against the client's own Power Apps estimates (`docs/SUCCESS_METRICS.md`).
+- *Trade-off:* needs a light time log, and an honest baseline estimated before each tool is built.
+
+**A8. Separate what Power Apps' certifications cover from what the client must prove anyway.** **7/10**
+- *Why:* Microsoft's PCI DSS and SOC 2 scopes include Power Apps, but Microsoft says that doesn't make customer apps compliant. Separation of duties, AML retention vs GDPR erasure, access reviews and audit evidence are the client's job on either option. That keeps "security by default → Power Apps" honest without letting it decide the whole question (`docs/COMPLIANCE.md`).
+- *Trade-off:* Build still has to earn encryption at rest, retention jobs, log retention and a pen test, which Power Apps provides as configuration.
+
 ## B. Scope (what I built and didn't)
 
 **B1. Build a shared platform (`core/`), not three apps.** **9/10**
 - *Why:* governance only stays consistent across 13+ tools if it's built once and inherited: auth, audit, masking, locking, approvals, adapters. Every tool is a folder that imports it.
-- *Trade-off:* the platform becomes critical shared code that needs an owner (~0.5 FTE in the model). This is the biggest new cost of building, and I said so.
+- *Trade-off:* the platform becomes critical shared code that needs an owner (~0.5 FTE in the model). This is the biggest new cost of building, and I said so. Later refinement: Devin can do most of that owner's work, so the owner's *human* hours became the success metric (A7).
 
 **B2. The tool factory is the centrepiece: fresh Devin sessions, business-language prompts, no mention of controls.** **10/10**
 - *Why:* it's the only part of the prototype that tests the actual claim, "tools #4–#13 are cheap *and* governed." Leaving controls out of the prompts tests whether the repo's rules make them the default.

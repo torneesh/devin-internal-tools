@@ -62,4 +62,4 @@ Pixel-perfect UI, a drag-and-drop builder, real SSO/payment/flag integrations, p
 3. Compliance scope: SOC2, PCI, regulator audit expectations for KYC decisions?
 4. Where does the data live: Dataverse, or their own DB via connectors?
 5. Existing stack: cloud, identity provider, flag service, payment provider?
-6. Is there a team with capacity to own a shared internal-tools platform (~0.5 FTE ongoing)?
+6. Is there a team with capacity to own a shared internal-tools platform (~0.5 FTE in the base case; ~0.15–0.25 FTE if Devin writes the upkeep PRs)?
