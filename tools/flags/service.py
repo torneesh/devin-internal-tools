@@ -4,6 +4,9 @@ The database holds the desired value of each flag per environment and is committ
 flag service is then sent the full state (never a delta) tagged with the change id as revision,
 so retries are safe and late pushes can't overwrite newer ones. If a push fails, the change
 stays saved, the state is marked FAILED (out of sync) and anyone allowed to edit can retry.
+
+Creating a flag (an engineer action) never touches production: production starts NOT_SET with
+no history, and a release manager's first production change is the first production push.
 """
 
 from __future__ import annotations
@@ -19,7 +22,7 @@ from core.concurrency import update_versioned
 from core.errors import InvalidTransition, NotFound, RuleViolation, StaleWrite, ValidationError
 from core.workflow import StateMachine
 from tools.flags.flag_service import FlagServiceUnavailable, LiveFlag
-from tools.flags.models import ENVIRONMENTS, Flag, FlagChange, FlagState
+from tools.flags.models import ENVIRONMENTS, NOT_SET, Flag, FlagChange, FlagState
 
 ENTITY = Flag.__tablename__
 STAGING, PRODUCTION = ENVIRONMENTS
@@ -30,6 +33,7 @@ SYNC_FLOW = StateMachine(
         PENDING: {PENDING, SYNCED, FAILED},  # PENDING -> PENDING: a newer change before the push
         SYNCED: {PENDING},
         FAILED: {PENDING},
+        NOT_SET: {PENDING},  # the first change in that environment
     }
 )
 
@@ -96,7 +100,7 @@ def live_values(user: CurrentUser, flag: Flag, flag_service=None) -> dict[str, L
 def create_flag(
     db: Session, user: CurrentUser, *, key: str, description: str = "", flag_service=None
 ) -> Flag:
-    """New flags start OFF at 0% in every environment (a no-op for production behaviour)."""
+    """New flags start OFF at 0% in staging (pushed). Production is left NOT_SET, unpushed."""
     ensure_role(user, *CREATE_ROLES)
     key = key.strip()
     if not KEY_PATTERN.match(key):
@@ -107,28 +111,28 @@ def create_flag(
     if db.scalar(select(Flag).where(Flag.key == key)):
         raise RuleViolation(f"A flag with key {key!r} already exists.")
     flag = Flag(key=key, description=description.strip(), created_by=user.username)
-    flag.states = [FlagState(environment=env, sync_status=PENDING) for env in ENVIRONMENTS]
+    flag.states = [
+        FlagState(environment=STAGING, sync_status=PENDING),
+        FlagState(environment=PRODUCTION, sync_status=NOT_SET),
+    ]
     db.add(flag)
     db.flush()
-    changes = []
-    for state in flag.states:
-        change = FlagChange(
-            flag_id=flag.id,
-            environment=state.environment,
-            action="create",
-            enabled=state.enabled,
-            rollout_pct=state.rollout_pct,
-            changed_by=user.username,
-        )
-        db.add(change)
-        changes.append((state, change))
+    staging = flag.state(STAGING)
+    change = FlagChange(
+        flag_id=flag.id,
+        environment=STAGING,
+        action="create",
+        enabled=staging.enabled,
+        rollout_pct=staging.rollout_pct,
+        changed_by=user.username,
+    )
+    db.add(change)
     db.flush()
     after = audit.snapshot(flag, "key", "description", "created_by")
     after.update({s.environment: s.summary for s in flag.states})
     audit.record(db, user, "create", ENTITY, flag.id, after=after)
     db.commit()
-    for state, change in changes:
-        _push(db, user, flag, state, change, flag_service)
+    _push(db, user, flag, staging, change, flag_service)
     return flag
 
 
@@ -207,6 +211,8 @@ def retry_push(
     """Re-send the current value after a failed (or interrupted) push."""
     ensure_role(user, *EDIT_ROLES.get(environment, ANY_EDIT_ROLES))
     state = get_state(db, user, flag_id, environment)
+    if not state.is_set:
+        raise InvalidTransition(f"Nothing to push: {environment} has not been set yet.")
     if state.sync_status == SYNCED:
         raise InvalidTransition("This environment is already in sync with the flag service.")
     SYNC_FLOW.check(state.sync_status, PENDING)
@@ -256,7 +262,8 @@ def _change(
 ) -> FlagState:
     if expected_version is None or int(expected_version) != state.version:
         raise StaleWrite()
-    if (state.enabled, state.rollout_pct) == (enabled, rollout_pct):
+    was_set = state.is_set
+    if was_set and (state.enabled, state.rollout_pct) == (enabled, rollout_pct):
         raise RuleViolation(f"No change: {state.environment} is already {state.summary}.")
     SYNC_FLOW.check(state.sync_status, PENDING)
     before = update_versioned(
@@ -279,7 +286,11 @@ def _change(
     )
     db.add(change)
     db.flush()
-    changed = [k for k in ("enabled", "rollout_pct") if before[k] != getattr(state, k)]
+    if was_set:
+        changed = [k for k in ("enabled", "rollout_pct") if before[k] != getattr(state, k)]
+    else:  # first value in this environment: record all of it
+        changed = ["enabled", "rollout_pct"]
+        before = {k: "not set" for k in changed}
     after = {k: getattr(state, k) for k in changed}
     if rolled_back_to:
         after["rolled_back_to_change"] = rolled_back_to

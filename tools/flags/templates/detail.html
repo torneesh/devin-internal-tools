@@ -5,7 +5,7 @@
 <style>
   .status-synced { background: #e8f5e9; }
   .status-on { background: #c8e6c9; }
-  .status-off { background: #eceff1; }
+  .status-off, .status-not-set { background: #eceff1; }
   table.history td { font-size: .85rem; vertical-align: middle; }
   table.history form button { padding: .1rem .6rem; font-size: .8rem; }
 </style>
@@ -21,15 +21,23 @@
   <article id="env-{{ env }}">
     <header>
       <strong>{{ env|capitalize }}</strong>
+      {% if s.is_set %}
       {{ ui.status_badge("ON" if s.enabled else "OFF") }}
       <span title="Sync with the flag service">{{ ui.status_badge(s.sync_status) }}</span>
+      {% else %}
+      <mark class="status status-not-set">NOT SET</mark>
+      {% endif %}
     </header>
     <dl class="detail">
+      {% if s.is_set %}
       <dt>Enabled</dt><dd>{{ "Yes" if s.enabled else "No" }}</dd>
       <dt>Rollout</dt><dd>{{ s.rollout_pct }}%</dd>
+      {% else %}
+      <dt>Value</dt><dd><em>Not set</em></dd>
+      {% endif %}
       <dt>Flag service</dt>
-      <dd>{% if lv %}{{ "ON" if lv.enabled else "OFF" }} · {{ lv.rollout_pct }}% <small>(revision {{ lv.revision }})</small>{% else %}<em>not received</em>{% endif %}</dd>
-      <dt>Sync</dt><dd>{{ s.sync_note or "" }}</dd>
+      <dd>{% if lv %}{{ "ON" if lv.enabled else "OFF" }} · {{ lv.rollout_pct }}% <small>(revision {{ lv.revision }})</small>{% else %}<em>nothing pushed</em>{% endif %}</dd>
+      <dt>Sync</dt><dd>{% if s.is_set %}{{ s.sync_note or "" }}{% else %}Not pushed yet. The first change by a {{ edit_roles[env]|join(" or ") }} is the first push.{% endif %}</dd>
       <dt>Version</dt><dd>{{ s.version }}</dd>
     </dl>
     {% if can_edit[env] %}
@@ -38,7 +46,7 @@
            [{"name": "enabled", "type": "hidden", "value": "false" if s.enabled else "true"}], kind="secondary" if s.enabled else "") }}
       {{ ui.action_form("/%s/%d/%s/rollout"|format(tool, flag.id, env), "Set rollout", s,
            [{"name": "rollout_pct", "label": "Rollout %", "type": "number", "value": s.rollout_pct|string, "required": True}], kind="outline") }}
-      {% if s.sync_status != "SYNCED" %}
+      {% if s.is_set and s.sync_status != "SYNCED" %}
         {{ ui.action_form("/%s/%d/%s/retry"|format(tool, flag.id, env), "Retry push", s, kind="contrast") }}
       {% endif %}
     </div>
@@ -71,6 +79,8 @@
             {% endif %}
           </td>
         </tr>
+      {% else %}
+        <tr><td colspan="6"><em>No changes yet.</em></td></tr>
       {% endfor %}
       </tbody>
     </table>

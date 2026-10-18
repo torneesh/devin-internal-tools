@@ -6,6 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from core.db import Base, VersionedMixin
 
 ENVIRONMENTS = ("staging", "production")
+NOT_SET = "NOT_SET"  # sync status of an environment nobody has set yet: nothing pushed
 
 
 class Flag(VersionedMixin, Base):
@@ -48,7 +49,13 @@ class FlagState(VersionedMixin, Base):
     flag: Mapped[Flag] = relationship(back_populates="states")
 
     @property
+    def is_set(self) -> bool:
+        return self.sync_status != NOT_SET
+
+    @property
     def summary(self) -> str:
+        if not self.is_set:
+            return "not set"
         return f"{'ON' if self.enabled else 'OFF'} · {self.rollout_pct}%"
 
 

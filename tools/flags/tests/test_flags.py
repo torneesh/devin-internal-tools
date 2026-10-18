@@ -99,8 +99,7 @@ def test_production_change_restricted_to_release_managers(db, user, login, svc):
         login("frank").post(f"{PREFIX}/{flag.id}/production/toggle", data=form).status_code == 403
     )
     db.refresh(state)
-    assert (state.enabled, state.rollout_pct) == (False, 0)
-    assert svc.get("production", flag.key).enabled is False
+    assert not state.is_set and svc.get("production", flag.key) is None
 
     state = turn_on(db, user("grace"), flag, "production", svc)
     assert state.enabled and svc.get("production", flag.key).enabled
@@ -108,8 +107,9 @@ def test_production_change_restricted_to_release_managers(db, user, login, svc):
 
 def test_production_rollback_and_retry_restricted_to_release_managers(db, user, svc):
     flag = new_flag(db, user, svc)
-    first = service.history(db, user("grace"), flag.id, "production")[-1]
-    state = turn_on(db, user("grace"), flag, "production", svc)
+    turn_on(db, user("grace"), flag, "production", svc)
+    first = service.history(db, user("grace"), flag.id, "production")[0]
+    state = set_pct(db, user("grace"), flag, "production", 10, svc)
     with pytest.raises(PermissionDenied):
         service.rollback(
             db, user("frank"), flag.id, "production", state.version, first.id, flag_service=svc
@@ -132,12 +132,52 @@ def test_flag_key_must_be_valid_and_unique(db, user, svc):
         new_flag(db, user, svc, key="unique.key")
 
 
-def test_new_flag_starts_off_everywhere_and_is_pushed(db, user, svc):
+def test_new_flag_starts_off_in_staging_and_production_is_not_set(db, user, svc):
     flag = new_flag(db, user, svc)
-    for env in ("staging", "production"):
-        state = flag.state(env)
-        assert (state.enabled, state.rollout_pct, state.sync_status) == (False, 0, service.SYNCED)
-        assert svc.get(env, flag.key).enabled is False
+    staging = flag.state("staging")
+    assert (staging.enabled, staging.rollout_pct, staging.sync_status) == (
+        False,
+        0,
+        service.SYNCED,
+    )
+    assert svc.get("staging", flag.key).enabled is False
+    production = flag.state("production")
+    assert (production.sync_status, production.summary) == (service.NOT_SET, "not set")
+    assert service.history(db, user("frank"), flag.id, "production") == []
+
+
+def test_creating_a_flag_never_pushes_to_production(db, user, svc):
+    flag = new_flag(db, user, svc)
+    assert [env for env, _, _ in svc.received] == ["staging"]
+    assert svc.get("production", flag.key) is None
+
+    svc.available = False  # an outage at create time fails staging only, never production
+    down = new_flag(db, user, svc, key="created.during-outage")
+    assert down.state("staging").sync_status == service.FAILED
+    assert down.state("production").sync_status == service.NOT_SET
+    assert down.state("production").sync_note is None
+
+
+def test_first_production_change_by_release_manager_is_first_push(db, user, svc):
+    flag = new_flag(db, user, svc)
+    state = set_pct(db, user("grace"), flag, "production", 10, svc)
+    assert (state.sync_status, state.summary) == (service.SYNCED, "OFF · 10%")
+    assert svc.received[-1][:2] == ("production", flag.key)
+    assert [c.action for c in service.history(db, user("grace"), flag.id, "production")] == [
+        "rollout"
+    ]
+
+    other = new_flag(db, user, svc, key="explicit.off")  # OFF at 0% is a real first value
+    state = set_pct(db, user("grace"), other, "production", 0, svc)
+    assert state.is_set and svc.get("production", other.key).rollout_pct == 0
+
+
+def test_retry_rejected_when_environment_not_set(db, user, svc):
+    flag = new_flag(db, user, svc)
+    state = flag.state("production")
+    with pytest.raises(InvalidTransition, match="has not been set yet"):
+        service.retry_push(db, user("grace"), flag.id, "production", state.version, svc)
+    assert svc.get("production", flag.key) is None
 
 
 def test_rollout_must_be_between_0_and_100(db, user, svc):
@@ -166,8 +206,8 @@ def test_unknown_environment_rejected(db, user, svc):
 def test_staging_change_does_not_touch_production(db, user, svc):
     flag = new_flag(db, user, svc)
     set_pct(db, user("frank"), flag, "staging", 40, svc)
-    assert flag.state("production").rollout_pct == 0
-    assert svc.get("production", flag.key).rollout_pct == 0
+    assert not flag.state("production").is_set
+    assert svc.get("production", flag.key) is None
     assert svc.get("staging", flag.key).rollout_pct == 40
 
 
@@ -200,6 +240,7 @@ def test_rollback_target_must_be_same_flag_and_environment(db, user, svc):
     flag = new_flag(db, user, svc)
     other = new_flag(db, user, svc, key="other.flag")
     state = turn_on(db, user("admin"), flag, "staging", svc)
+    turn_on(db, user("admin"), flag, "production", svc)
     prod_change = service.history(db, user("admin"), flag.id, "production")[0]
     other_change = service.history(db, user("admin"), other.id, "staging")[0]
     for change_id in (prod_change.id, other_change.id, 999_999):
@@ -276,7 +317,6 @@ def test_every_mutation_audited(db, user, svc):
     assert events == [
         ("create", "frank"),
         ("push_result", "frank"),
-        ("push_result", "frank"),
         ("toggle", "frank"),
         ("push_result", "frank"),
         ("rollout", "grace"),
@@ -287,13 +327,17 @@ def test_every_mutation_audited(db, user, svc):
         ("push_result", "frank"),
     ]
     trail = audit.trail(db, service.ENTITY, flag.id)
-    rollout = trail[5]
-    assert (rollout.before, rollout.after) == (
-        {"production.rollout_pct": 0},
-        {"production.rollout_pct": 5},
+    assert trail[0].after["production"] == "not set"
+    first_prod = trail[4]  # first production value: every field recorded, from "not set"
+    assert (first_prod.before, first_prod.after) == (
+        {"production.enabled": "not set", "production.rollout_pct": "not set"},
+        {"production.enabled": False, "production.rollout_pct": 5},
     )
-    assert trail[7].after["staging.rolled_back_to_change"] == first.id
-    assert trail[8].after == {"staging.sync_status": service.FAILED}
+    rollout = set_pct(db, user("grace"), flag, "production", 7, svc)
+    assert rollout.summary == "OFF · 7%"
+    assert audit.trail(db, service.ENTITY, flag.id)[-2].before == {"production.rollout_pct": 5}
+    assert trail[6].after["staging.rolled_back_to_change"] == first.id
+    assert trail[7].after == {"staging.sync_status": service.FAILED}
     outage = audit.trail(db, "flag_service", "mock")[-1]
     assert (outage.actor, outage.after) == ("frank", {"available": False})
 
@@ -302,6 +346,7 @@ def test_detail_page_shows_history_and_rollback_by_role(db, user, login, svc):
     flag = new_flag(db, user, svc)
     turn_on(db, user("frank"), flag, "staging", svc)
     turn_on(db, user("grace"), flag, "production", svc)
+    set_pct(db, user("grace"), flag, "production", 30, svc)
     frank_page = login("frank").get(f"{PREFIX}/{flag.id}").text
     assert "Change history" in frank_page and "Audit trail" in frank_page
     assert f"/flags/{flag.id}/staging/rollback" in frank_page
@@ -309,6 +354,15 @@ def test_detail_page_shows_history_and_rollback_by_role(db, user, login, svc):
     assert "Changing production needs the release_manager role" in frank_page
     grace_page = login("grace").get(f"{PREFIX}/{flag.id}").text
     assert f"/flags/{flag.id}/production/rollback" in grace_page
+
+
+def test_detail_page_shows_production_not_set(db, user, login, svc):
+    flag = new_flag(db, user, svc)
+    frank_page = login("frank").get(f"{PREFIX}/{flag.id}").text
+    assert "NOT SET" in frank_page and "nothing pushed" in frank_page
+    grace_page = login("grace").get(f"{PREFIX}/{flag.id}").text
+    assert f"/flags/{flag.id}/production/toggle" in grace_page
+    assert f"/flags/{flag.id}/production/retry" not in grace_page
 
 
 def test_one_click_rollback_route(db, user, login, svc):
@@ -325,3 +379,4 @@ def test_one_click_rollback_route(db, user, login, svc):
 def test_seeded_flags_are_live(client, login):
     page = login("frank").get(PREFIX).text
     assert "checkout.new-flow" in page and "ON · 25%" in page
+    assert "not set" in page  # payments.retry-v2 has never been set in production

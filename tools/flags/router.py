@@ -65,7 +65,11 @@ def create(
     db: Session = Depends(get_db),
 ):
     flag = service.create_flag(db, user, key=key, description=description)
-    flash(request, f"Flag {flag.key} created (OFF at 0% in every environment).")
+    flash(
+        request,
+        f"Flag {flag.key} created: OFF at 0% in staging. Production is not set and nothing "
+        "was pushed there; a release manager's first production change pushes it.",
+    )
     return _back(flag.id)
 
 
