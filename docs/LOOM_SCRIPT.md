@@ -8,7 +8,7 @@ You asked whether your team can use Devin to build internal tools instead of pay
 
 **[0:30 | slide: "What Power Apps sells"]**
 So what are you actually paying Microsoft for? It isn't drag-and-drop. It's **speed and governance, repeated across many tools.** A small team ships a tool in days, every tool gets sign-in, roles, field masking and audit for free, ops staff can edit simple apps themselves, and Microsoft runs and certifies the platform.
-The catch is that the building blocks run out. Custom logic, your own APIs, automated testing (Microsoft has deprecated its Test Engine), and scale: their own docs say large queries can silently return incomplete results. So: **can Devin match that speed and governance for any tool?** Here's what I built with Devin.
+The catch is that the building blocks run out. Custom logic, your own APIs, automated testing (Microsoft has deprecated its Test Engine), and scale: their own docs say large queries can silently return incomplete results. So: **can Devin match that speed and governance for any tool?** Here's what I built with Devin in under an hour.
 
 **[1:10 | demo: launcher → switch user]**
 First, governance built once. This is one shared platform. When I switch from a support agent to an approver, permissions change. This bank account is masked. To reveal it I have to give a reason, and that reason lands here, in an append-only audit log. Masking rules live in one file, so tool thirteen is as governed as tool one.
