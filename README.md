@@ -3,7 +3,7 @@
 This prototype tests a claim: Devin on a small shared Python platform can replace the value of Microsoft Power Apps for a fintech team that plans to build 10+ internal tools. That value is speed combined with built-in governance. The argument is in [`docs/PITCH.md`](docs/PITCH.md), and this repo is the evidence for it.
 
 What's here:
-- **`core/`**: a shared platform that every tool inherits. It provides mock SSO with a user switcher, roles, an append-only audit log, central field masking with audited reveal, optimistic locking, state machines and approval rules, and adapters for external systems.
+- **`core/`**: a shared platform that every tool inherits. It provides real OIDC sign-in (a local Keycloak stands in for Entra ID or Okta) with identity-provider groups mapped to roles, a mock user switcher for tests, roles, an append-only audit log, central field masking with audited reveal, optimistic locking, state machines and approval rules, adapters for external systems, and a shared Fluent-style UI shell: header, role-filtered left menu and a stage bar for each record's workflow.
 - **`tools/refunds/`**: the worked example of custom logic. It covers money movement with separation of duties, a two-approver threshold, idempotent execution, provider timeouts and reconciliation.
 - **`tools/_template/`** and **[`AGENTS.md`](AGENTS.md)**: the starting point and the rules for every new tool.
 - **Factory-built tools**: a KYC review queue and a feature-flag admin. Fresh Devin sessions built them in parallel, each from one business paragraph with no mention of the platform. Results, including what had to be fixed in review, are in [`docs/FACTORY_RESULTS.md`](docs/FACTORY_RESULTS.md).
@@ -45,10 +45,12 @@ Both modes seed about 50 refunds, 40 KYC cases and 13 flags of fake data (Faker,
 | admin | every role |
 
 ## 2-minute demo script
-Each step maps to a demo moment in `docs/PITCH.md`.
+Each step maps to a demo moment in `docs/PITCH.md`. [`docs/LOOM_FEATURE_GUIDE.md`](docs/LOOM_FEATURE_GUIDE.md) has the same features as a table, with the Power Apps equivalent, exact clicks and one line to say for each.
+
+Run `make sso && make run-sso` and sign in with password `demo`. "Switch to X" means sign out and sign in as X. With `make run`, use the user dropdown in the header instead.
 
 **Pillar 1: governance is built once and every tool inherits it (≈40s)**
-1. Sign in as **alice** (support agent). On the home page, the tools she can't use are greyed out as "No access". Open Refunds: she can request a refund, but she can't approve one or reveal a bank account.
+1. Sign in as **alice** (support agent). On the home page, the tools she can't use are greyed out as "No access". Open Refunds: she can request a refund, but she can't approve one or reveal a bank account. The left menu only lists the tools her role can open. Optional: in the Keycloak admin console (http://localhost:8080, `admin`/`admin`), select realm **internal-tools** → Users → alice → Groups → **Join group** → `auditor`. When she signs in again, Audit log appears in her menu, and the audit log records her roles before → after.
 2. Switch to **bob** (approver) and open refund `TXN-10412`. The bank account shows as `••••2606`. Click **Reveal**: you must give a reason, and the full value appears.
 3. Switch to **ivan** (auditor) and open **Audit log** (`/audit`). The `reveal` event shows who revealed the value, when and why. Audit rows can't be edited or deleted, because database triggers reject `UPDATE` and `DELETE` on `audit_events`.
 4. Change one masking rule. In `core/masking.py`, change `"refunds.bank_account"` from `mask=last4` to `mask=redact_all` and save. `make run` uses `--reload`, so the server restarts. Every refunds table and detail page now shows `••••••`. The database survives the reload, but the in-memory mock provider is reset. `tests/core/test_masking.py::test_changing_one_policy_changes_every_page` proves the same thing.
@@ -57,7 +59,7 @@ Each step maps to a demo moment in `docs/PITCH.md`.
 
 5. Self-approval: sign in as **admin**, request a refund, then try to approve it. The request is blocked: "You can't approve your own request (separation of duties)".
 6. Two approvers over $1,000: as **bob**, approve `TXN-10388` ($2,400). It stays at 1 of 2 approvals. Bob can't approve it a second time. When **carol** approves, it moves to `APPROVED`.
-7. Payment timeout without a double payment: as **bob**, open `TXN-10412` and set the provider mode to **timeout_after_accept**. Click **Execute payment**. The provider took the money but its response was lost, so the status is `UNKNOWN`, not `FAILED`. Click **Reconcile**. The platform looks up the payment by idempotency key, and the status becomes `SUCCEEDED`. If you click **Execute payment** again instead of reconciling, the same key is reused; `test_retry_never_pays_twice` checks that the provider was paid once (the mock has no ledger page).
+7. Payment timeout without a double payment: as **bob**, open `TXN-10412` and select **timeout_after_accept** and click **Set mode**, then click **Execute payment**. The provider took the money but its response was lost, so the status is `UNKNOWN`, not `FAILED`, and the stage bar turns orange. Click **Reconcile with provider**. The platform looks up the payment by idempotency key, and the status becomes `SUCCEEDED`. If you click **Execute payment** again instead of reconciling, the same key is reused; `test_retry_never_pays_twice` checks that the provider was paid once (the mock has no ledger page).
 8. Run `make test`. Each rule has a named test: `test_requester_cannot_approve_own_refund`, `test_retry_never_pays_twice` and the others. CI runs the same suite on every PR.
 
 **Pillar 3: the tool factory (≈40s)**
@@ -68,10 +70,12 @@ Each step maps to a demo moment in `docs/PITCH.md`.
 ## Architecture
 ```
 app.py                 app factory: mounts core routers, discovers tools/*/router.py, creates tables, seeds
-seed.py                users/roles + demo data per tool (seed_<tool>)
+seed.py                users/roles + demo data per tool (seed_<tool>) + bulk fake data (seed_fake, Faker)
+docker-compose.yml     local Keycloak (OIDC identity provider); realm, groups and users in sso/realm.json
 core/
   db.py                engine/session, VersionedMixin (id, version, created_at, updated_at)
-  auth.py              mock SSO, CurrentUser, require_role (route) / ensure_role (service)
+  auth.py              CurrentUser, require_role (route) / ensure_role (service); mock login when SSO is off
+  sso.py               OIDC login/callback/logout (Authlib); creates/updates users and roles from IdP groups
   audit.py             append-only AuditEvent, record() in the caller's transaction, /audit queries
   masking.py           FIELD_POLICIES["<table>.<column>"], mask(), audited reveal endpoint
   concurrency.py       update_versioned(): expected-version check -> 409 StaleWrite
@@ -79,7 +83,7 @@ core/
   integrations.py      adapter registry for external systems (mocked locally and in tests)
   registry.py          register_tool() + home-page launcher filtered by role
   errors.py, ui.py     typed errors -> friendly pages with the right status; Jinja + shared macros
-  templates/           base, macros (data_table, detail, masked_field, action_form, audit_trail), audit
+  templates/           base (header + left menu), macros (data_table, detail, masked_field, action_form, audit_trail, stage_bar), audit
 tools/<name>/          models.py, service.py, router.py, templates/, tests/ (+ adapter mock if needed)
 ```
 

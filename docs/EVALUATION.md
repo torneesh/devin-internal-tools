@@ -44,7 +44,7 @@ Numbers come from `analysis/cost_model.py` (base case) and Microsoft/Devin docs 
 ## 3. Security implications
 | | Power Apps | Devin-built platform |
 |---|---|---|
-| Identity & access | Entra SSO, Conditional Access, roles: configuration | Client integrates OIDC with their IdP; RBAC is code (built once in `core/`) |
+| Identity & access | Entra SSO, Conditional Access, roles: configuration | Client integrates OIDC with their IdP (prototype: working OIDC against a local Keycloak, groups → roles); RBAC is code (built once in `core/`) |
 | Sensitive data | Column security + masking (needs a Managed Environment); DLP on connectors | Central masking policy + audited reveal; data stays in their infrastructure |
 | Audit | Dataverse auditing (changes and access) | Append-only audit in the same transaction; client must protect its integrity |
 | Compliance evidence | Microsoft attests the platform; **shared responsibility**: the client still owns app logic, access config, data and integrations | All on the client, but through the **same SDLC evidence** they already produce for SOC2 |

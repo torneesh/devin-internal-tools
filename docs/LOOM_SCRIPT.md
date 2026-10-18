@@ -10,8 +10,8 @@ You asked whether your team can use Devin to build internal tools instead of pay
 So what are you actually paying Microsoft for? It isn't drag-and-drop. It's **speed and governance, repeated across many tools.** A small team ships a tool in days, every tool gets sign-in, roles, field masking and audit for free, ops staff can edit simple apps themselves, and Microsoft runs and certifies the platform.
 The catch is that the building blocks run out. Custom logic, your own APIs, automated testing (Microsoft has deprecated its Test Engine), and scale: their own docs say large queries can silently return incomplete results. So: **can Devin match that speed and governance for any tool?** Here's what I built with Devin in under an hour.
 
-**[1:10 | demo: launcher → switch user]**
-First, governance built once. This is one shared platform. When I switch from a support agent to an approver, permissions change. This bank account is masked. To reveal it I have to give a reason, and that reason lands here, in an append-only audit log. Masking rules live in one file, so tool thirteen is as governed as tool one.
+**[1:10 | demo: SSO sign-in → launcher]**
+First, governance built once. This is one shared platform. I sign in through SSO, a stand-in for your Entra, and my roles come from identity-provider groups, so a support agent and an approver see different tools. This bank account is masked. To reveal it I have to give a reason, and that reason lands here, in an append-only audit log. Masking rules live in one file, so tool thirteen is as governed as tool one.
 
 **[1:45 | demo: refunds]**
 Second, logic beyond the building blocks. I deliberately started with your riskiest workflow, money movement, not a form. Alice requests $2,500 and can't approve her own refund. Bob approves, but over the threshold it needs a second approver. Now I execute, and the provider times out *after* accepting. That's not "failed"; it's **unknown**. Reconcile finds it paid. Retry, and it doesn't pay twice. [cut to test run] Each of those rules is a named test that runs on every PR.

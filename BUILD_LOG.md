@@ -28,4 +28,5 @@ Separate from the timed build above. Branch `devin/1792343517-sso-fake-data-ui`.
 | 2026-10-18 17:11 | **Start** | Keycloak 26 in Docker Compose, realm generated from `seed.py` users, groups = roles. |
 | 2026-10-18 17:15 | SSO + fake data | OIDC sign-in end to end through Keycloak (bob, alice), group roles synced and audited. Faker seed: 48 refunds, 40 KYC cases, 13 flags across every status, created through the services so rules and audit apply. |
 | 2026-10-18 17:16 | Light restyle | Fluent-style header, role-filtered left menu and business-process stage bar on refund and KYC records, all in the shared templates. 94 tests, lint clean. |
+| 2026-10-18 17:42 | Verify + docs | Browser E2E run of every Loom-guide flow passed (PR #6 comment). Guide click paths and KYC reveal copy fixed. All docs updated for SSO, fake data and the new shell. |
 

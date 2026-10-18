@@ -50,7 +50,10 @@ Follow these rules for every new tool or change. `tools/refunds/` is the full wo
 ## UI conventions
 - Templates extend `base.html` and `{% import "macros.html" as ui %}`. Render with
   `page(request, f"{T}/x.html", ...)`, where `T = f"{TOOL}/templates"`.
-- Reuse `ui.data_table`, `ui.detail`, `ui.action_form`, `ui.status_badge` and `ui.audit_trail`. Show
+- Reuse `ui.data_table`, `ui.detail`, `ui.action_form`, `ui.status_badge` and `ui.audit_trail`. Records
+  with a `StateMachine` show `ui.stage_bar(stages, status, warn=..., bad=...)` under the title.
+- Don't build sign-in or a menu: `current_user` / `require_role` work the same with SSO on or off,
+  and `register_tool` adds the tool to the role-filtered left menu. Show
   the record's audit trail on its detail page.
 - Raise `core.errors` exceptions (`PermissionDenied`, `NotFound`, `ValidationError`,
   `RuleViolation`, `InvalidTransition`, `StaleWrite`). The platform renders them with the right

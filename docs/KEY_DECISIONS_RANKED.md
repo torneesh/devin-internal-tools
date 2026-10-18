@@ -86,8 +86,11 @@ Grouped by stage. A suggested one-page cut is at the bottom.
 **C7. Optimistic locking (version column → 409 on stale write).** **4/10**
 - *Why:* two reviewers on one case can't silently overwrite each other, and it needs no locks. *Trade-off:* the user reloads and redoes the change.
 
-**C8. Mocked SSO behind an OIDC seam.** **4/10**
-- *Why:* everything depends only on `current_user` / `require_role`, so wiring in Entra or Okta later is one function.
+**C8. Mocked SSO behind an OIDC seam, then real OIDC via Keycloak.** **6/10**
+- *Why:* everything depends only on `current_user` / `require_role`, so adding real SSO later touched one new module (`core/sso.py`) and no tool. Keycloak gives a real sign-in without the client's Azure tenant, using the same protocol as Entra; IdP groups map one-to-one to roles. *Trade-off:* Keycloak isn't Entra; roles sync only at sign-in; no SCIM or Conditional Access. The mock switcher stays for tests.
+
+**C11. Power Apps-style shell in the shared templates only.** **6/10**
+- *Why:* the header, role-filtered left menu and stage bar (the state machine drawn like a business process flow) live in `base.html` and `macros.html`, so one change restyled every tool, including the two factory-built ones. *Trade-off:* a look-alike of model-driven apps, not feature parity (no view designer, dashboards or form editor).
 
 **C9. Cost model as editable code.** **5/10**
 - *Why:* the VP can change any assumption and re-run it, which matters because the answer is sensitive to assumptions.

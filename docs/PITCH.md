@@ -28,7 +28,7 @@ Each new bespoke tool raises the odds of hitting one of these.
 ## Pillar 1: Governance is built once and every tool inherits it (1:10–1:45)
 **Claim:** Sign-in, roles, field masking, audit, approvals and safe updates live in one shared platform. They're security-reviewed once and inherited by every tool, so tool #13 is as governed as tool #1.
 **Evidence:**
-- Switch user → see different permissions.
+- Sign in through SSO as different users → groups in the identity provider decide which tools each person sees.
 - Masked field → "Reveal" requires a reason → appears in the audit log.
 - Change one masking rule in the platform → every tool picks it up.
 
@@ -86,7 +86,7 @@ Full detail: `docs/EVALUATION.md`.
 ## What to build, ranked by support for the thesis
 | Rank | Item | Built by | Supports |
 |---|---|---|---|
-| 1 | **Platform core:** mock SSO + role switch, `require_role`, audit (same transaction), field masking + audited reveal (rules in one place), version-checked updates, approval/state-machine helpers, integration-adapter pattern, app registry/launcher | Me (Devin), in this session | P1, P3 |
+| 1 | **Platform core:** SSO (mock in the timed build; real OIDC via Keycloak added afterwards) + roles, `require_role`, audit (same transaction), field masking + audited reveal (rules in one place), version-checked updates, approval/state-machine helpers, integration-adapter pattern, app registry/launcher | Me (Devin), in this session | P1, P3 |
 | 2 | **`AGENTS.md`:** the platform rules a new tool must follow, plus a tool template | Me | **P3** |
 | 3 | **Refunds** worked example: SoD, dual approval, mock provider with timeout, one-time execution key, reconcile | Me | **P2** |
 | 4 | pytest per rule + GitHub Actions CI | Me | P2, P3 |
