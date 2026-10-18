@@ -37,6 +37,10 @@ def redact_all(value: str) -> str:
     return "••••••"
 
 
+def year_only(value: str) -> str:
+    return value[:4] + "-••-••"
+
+
 def email(value: str) -> str:
     name, _, domain = value.partition("@")
     return f"{name[:1]}•••@{domain}" if domain else redact_all(value)
@@ -45,6 +49,10 @@ def email(value: str) -> str:
 # "<table name>.<column>" -> Policy
 FIELD_POLICIES: dict[str, Policy] = {
     "refunds.bank_account": Policy(mask=last4, reveal_roles=("refund_approver",)),
+    "kyc_cases.government_id": Policy(mask=last4, reveal_roles=("kyc_analyst", "kyc_supervisor")),
+    "kyc_cases.date_of_birth": Policy(
+        mask=year_only, reveal_roles=("kyc_analyst", "kyc_supervisor")
+    ),
     "template_items.contact_email": Policy(mask=email, reveal_roles=("engineer",)),
 }
 

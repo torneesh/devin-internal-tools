@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% import "macros.html" as ui %}
+{% block title %}KYC case #{{ case.id }}{% endblock %}
+{% block content %}
+<hgroup>
+  <h2>KYC case #{{ case.id }} {{ ui.status_badge(case.status) }}</h2>
+  <p><a href="/kyc">← Queue</a></p>
+</hgroup>
+
+{% set is_claimant = case.status == "IN_REVIEW" and case.assigned_to == user.username and user.has_role('kyc_analyst') %}
+<div class="grid">
+  <article>
+    {{ ui.detail("kyc_cases", case, [
+         ("Customer", "customer_name"), ("Date of birth", "date_of_birth"), ("Government ID", "government_id"),
+         ("Country", "country"), ("Documents", "document_status"), ("Assigned to", "assigned_to"),
+         ("Escalated by", "escalated_by"), ("Escalation reason", "escalation_reason"),
+         ("Decided by", "decided_by"), ("Decision reason", "decision_reason"),
+         ("Opened by", "created_by"), ("Version", "version")], user) }}
+  </article>
+  <article>
+    <header><strong>Actions</strong></header>
+    <div class="actions">
+      {% if flow.can(case.status, "IN_REVIEW") and user.has_role('kyc_analyst') %}
+        {{ ui.action_form("/kyc/%d/claim"|format(case.id), "Claim case", case) }}
+      {% endif %}
+      {% if is_claimant %}
+        {{ ui.action_form("/kyc/%d/approve"|format(case.id), "Approve", case,
+             [{"name": "reason", "label": "Approval reason", "required": True}]) }}
+        {{ ui.action_form("/kyc/%d/reject"|format(case.id), "Reject", case,
+             [{"name": "reason", "label": "Rejection reason", "required": True}], kind="secondary") }}
+        {{ ui.action_form("/kyc/%d/escalate"|format(case.id), "Escalate to supervisor", case,
+             [{"name": "reason", "label": "Why escalate?", "required": True}], kind="contrast") }}
+        {{ ui.action_form("/kyc/%d/release"|format(case.id), "Release claim", case, kind="outline") }}
+      {% endif %}
+      {% if case.status == "ESCALATED" and user.has_role('kyc_supervisor') %}
+        {{ ui.action_form("/kyc/%d/resolve"|format(case.id), "Resolve", case,
+             [{"name": "outcome", "label": "Outcome", "options": ["APPROVED", "REJECTED"]},
+              {"name": "reason", "label": "Resolution reason", "required": True}]) }}
+      {% endif %}
+    </div>
+    {% if case.status == "IN_REVIEW" and not is_claimant %}<p><small>Claimed by {{ case.assigned_to }}. Only they can decide it.</small></p>{% endif %}
+    {% if case.status == "ESCALATED" and not user.has_role('kyc_supervisor') %}<p><small>Waiting for a KYC supervisor.</small></p>{% endif %}
+    {% if case.document_status != "UPLOADED" and case.status in ("IN_REVIEW", "ESCALATED") %}<p><small>Documents are {{ case.document_status }}: the case can't be approved until they're uploaded.</small></p>{% endif %}
+  </article>
+</div>
+
+<h3>Audit trail</h3>
+{{ ui.audit_trail(trail) }}
+{% endblock %}
