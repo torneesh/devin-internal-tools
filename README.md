@@ -25,7 +25,7 @@ Sign in at `/login` by choosing a seeded user. This is mock SSO.
 |---|---|
 | alice | support_agent |
 | bob, carol | refund_approver |
-| dave | kyc_analyst |
+| dave, heidi | kyc_analyst |
 | erin | kyc_supervisor |
 | frank | engineer |
 | grace | release_manager |
@@ -51,7 +51,7 @@ Each step maps to a demo moment in `docs/PITCH.md`.
 **Pillar 3: the tool factory (≈40s)**
 
 9. Show `docs/FACTORY_RESULTS.md`. Two fresh sessions ran in parallel, and each was given only one paragraph. The table records elapsed time, PR links, which controls were inherited without being asked for, and what review had to fix.
-10. Open **KYC queue** as **dave** (analyst). The government ID is masked, and revealing it needs a reason and is audited. Open **Feature flags** as **frank** (engineer), toggle a staging flag, then try production. Production is restricted to release managers (**grace**). Show the change history and one-click rollback.
+10. Open **KYC queue** as **dave** (analyst). The government ID and date of birth are masked. There's no Reveal button until dave **claims** the case; then revealing needs a reason and is audited. Open **Feature flags** as **frank** (engineer), toggle a staging flag, then try production: frank gets no production controls. Switch to **grace** (release manager) to change production, then show the change history and one-click **Roll back to this**. Both behaviours came from review decisions recorded in `docs/FACTORY_RESULTS.md`.
 
 ## Architecture
 ```
