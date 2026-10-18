@@ -37,6 +37,7 @@ def seed(db: Session) -> None:
         db.add(User(username=username, display_name=display_name, roles=list(roles)))
     db.commit()
     seed_refunds(db)
+    seed_flags(db)
 
 
 def seed_refunds(db: Session) -> None:
@@ -71,3 +72,33 @@ def seed_refunds(db: Session) -> None:
         reason="Order cancelled before shipping",
     )
     service.approve(db, bob, ready.id, ready.version)
+
+
+def seed_flags(db: Session) -> None:
+    from tools.flags import service
+
+    frank, grace = load_user(db, "frank"), load_user(db, "grace")
+
+    def change(fn, flag, env, *args):
+        state = flag.state(env)
+        return fn(db, frank if env == "staging" else grace, flag.id, env, state.version, *args)
+
+    checkout = service.create_flag(
+        db, frank, key="checkout.new-flow", description="Single-page checkout redesign"
+    )
+    change(service.set_enabled, checkout, "staging", True)
+    change(service.set_rollout, checkout, "staging", 50)
+    change(service.set_rollout, checkout, "staging", 100)
+    change(service.set_enabled, checkout, "production", True)
+    change(service.set_rollout, checkout, "production", 10)
+    change(service.set_rollout, checkout, "production", 25)
+
+    search = service.create_flag(
+        db, frank, key="search.semantic-ranking", description="Embedding-based search ranking"
+    )
+    change(service.set_enabled, search, "staging", True)
+    change(service.set_rollout, search, "staging", 100)
+
+    service.create_flag(
+        db, frank, key="payments.retry-v2", description="New retry policy for card payments"
+    )

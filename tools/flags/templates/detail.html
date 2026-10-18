@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% import "macros.html" as ui %}
+{% block title %}Flag {{ flag.key }}{% endblock %}
+{% block content %}
+<style>
+  .status-synced { background: #e8f5e9; }
+  .status-on { background: #c8e6c9; }
+  .status-off { background: #eceff1; }
+  table.history td { font-size: .85rem; vertical-align: middle; }
+  table.history form button { padding: .1rem .6rem; font-size: .8rem; }
+</style>
+<hgroup>
+  <h2><code>{{ flag.key }}</code></h2>
+  <p>{{ flag.description or "No description." }} <a href="/{{ tool }}">← All flags</a></p>
+</hgroup>
+
+<div class="grid">
+{% for env in environments %}
+  {% set s = flag.state(env) %}
+  {% set lv = live[env] %}
+  <article id="env-{{ env }}">
+    <header>
+      <strong>{{ env|capitalize }}</strong>
+      {{ ui.status_badge("ON" if s.enabled else "OFF") }}
+      <span title="Sync with the flag service">{{ ui.status_badge(s.sync_status) }}</span>
+    </header>
+    <dl class="detail">
+      <dt>Enabled</dt><dd>{{ "Yes" if s.enabled else "No" }}</dd>
+      <dt>Rollout</dt><dd>{{ s.rollout_pct }}%</dd>
+      <dt>Flag service</dt>
+      <dd>{% if lv %}{{ "ON" if lv.enabled else "OFF" }} · {{ lv.rollout_pct }}% <small>(revision {{ lv.revision }})</small>{% else %}<em>not received</em>{% endif %}</dd>
+      <dt>Sync</dt><dd>{{ s.sync_note or "" }}</dd>
+      <dt>Version</dt><dd>{{ s.version }}</dd>
+    </dl>
+    {% if can_edit[env] %}
+    <div class="actions">
+      {{ ui.action_form("/%s/%d/%s/toggle"|format(tool, flag.id, env), "Turn OFF" if s.enabled else "Turn ON", s,
+           [{"name": "enabled", "type": "hidden", "value": "false" if s.enabled else "true"}], kind="secondary" if s.enabled else "") }}
+      {{ ui.action_form("/%s/%d/%s/rollout"|format(tool, flag.id, env), "Set rollout", s,
+           [{"name": "rollout_pct", "label": "Rollout %", "type": "number", "value": s.rollout_pct|string, "required": True}], kind="outline") }}
+      {% if s.sync_status != "SYNCED" %}
+        {{ ui.action_form("/%s/%d/%s/retry"|format(tool, flag.id, env), "Retry push", s, kind="contrast") }}
+      {% endif %}
+    </div>
+    {% else %}
+    <small>Changing {{ env }} needs the {{ edit_roles[env]|join(" or ") }} role.</small>
+    {% endif %}
+  </article>
+{% endfor %}
+</div>
+
+<h3>Change history</h3>
+<div class="grid">
+{% for env in environments %}
+  {% set s = flag.state(env) %}
+  <div>
+    <h4>{{ env|capitalize }}</h4>
+    <table class="history striped">
+      <thead><tr><th>#</th><th>When (UTC)</th><th>Who</th><th>Change</th><th>Value</th><th></th></tr></thead>
+      <tbody>
+      {% for c in history[env] %}
+        <tr>
+          <td>{{ c.id }}</td><td>{{ c.created_at|dt }}</td><td>{{ c.changed_by }}</td>
+          <td>{{ c.action }}{% if c.rolled_back_to %} to #{{ c.rolled_back_to }}{% endif %}</td>
+          <td>{{ "ON" if c.enabled else "OFF" }} · {{ c.rollout_pct }}%</td>
+          <td>
+            {% if loop.first %}<small>current</small>
+            {% elif can_edit[env] and (c.enabled, c.rollout_pct) != (s.enabled, s.rollout_pct) %}
+              {{ ui.action_form("/%s/%d/%s/rollback"|format(tool, flag.id, env), "Roll back to this", s,
+                   [{"name": "change_id", "type": "hidden", "value": c.id|string}], kind="outline secondary") }}
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endfor %}
+</div>
+
+<h3>Audit trail</h3>
+{{ ui.audit_trail(trail) }}
+{% endblock %}
