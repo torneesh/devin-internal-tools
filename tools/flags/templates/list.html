@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% import "macros.html" as ui %}
+{% block title %}Feature flags{% endblock %}
+{% block content %}
+<hgroup>
+  <h2>Feature flags</h2>
+  <p>Engineers change flags in staging. Production changes are restricted to release managers. Every change is pushed to the flag service and can be rolled back.</p>
+</hgroup>
+{% if can_create %}
+<form method="post" action="/{{ tool }}" class="action-form" style="margin-bottom:1rem">
+  <input name="key" placeholder="Flag key, e.g. checkout.new-flow" aria-label="Flag key" required pattern="[a-z][a-z0-9._\-]{2,63}">
+  <input name="description" placeholder="What does it control?" aria-label="Description">
+  <button type="submit">Create flag</button>
+</form>
+{% endif %}
+{{ ui.data_table(flags, [("Key", "key"), ("Description", "description"), ("Staging", "staging"), ("Production", "production"), ("Created by", "created_by")],
+     entity="flags", link="/" ~ tool, empty="No flags yet.") }}
+
+{% if can_demo %}
+<hr>
+<small><strong>Demo:</strong> mock flag service is {{ "up" if service_available else "DOWN" }}.</small>
+<form method="post" action="/{{ tool }}/service-mode" class="action-form" style="margin-top:.5rem">
+  <input type="hidden" name="available" value="{{ 'down' if service_available else 'up' }}">
+  <button type="submit" class="outline">{{ "Simulate outage" if service_available else "Restore service" }}</button>
+</form>
+{% endif %}
+{% endblock %}
