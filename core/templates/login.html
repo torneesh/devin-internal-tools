@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Sign in{% endblock %}
+{% block content %}
+<h2>Sign in</h2>
+<p>Mock SSO for the prototype. Pick a user. In production this is your identity provider (Entra ID or Okta via OIDC).</p>
+<table class="striped">
+  <thead><tr><th>User</th><th>Roles</th><th></th></tr></thead>
+  <tbody>
+  {% for u in users %}
+    <tr>
+      <td>{{ u.display_name }} <small>({{ u.username }})</small></td>
+      <td>{{ u.roles|sort|join(', ') }}</td>
+      <td>
+        <form method="post" action="/login" style="margin:0">
+          <input type="hidden" name="username" value="{{ u.username }}">
+          <button type="submit" class="outline">Sign in</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

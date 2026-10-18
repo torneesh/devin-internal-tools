@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}{{ error.status_code }}{% endblock %}
+{% block content %}
+<article class="flash flash-error">
+  <h3>{{ error.status_code }}: {{ error.title if error.message != error.title else "Error" }}</h3>
+  <p>{{ error.message }}</p>
+  <a href="javascript:history.back()">Go back</a> · <a href="/">Home</a>
+</article>
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% import "macros.html" as ui %}
+{% block content %}
+<h2>Items</h2>
+{% if user.has_role('engineer') %}
+<form method="post" action="/{{ tool }}" class="action-form">
+  <input name="title" placeholder="Title" required>
+  <input name="contact_email" placeholder="Contact email" required>
+  <button type="submit">Create</button>
+</form>
+{% endif %}
+{{ ui.data_table(items, [("#", "id"), ("Title", "title"), ("Contact", "contact_email"), ("Status", "status"), ("Owner", "owner")],
+     entity="template_items", link="/" ~ tool) }}
+{% endblock %}

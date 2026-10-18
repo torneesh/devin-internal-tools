@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% import "macros.html" as ui %}
+{% block content %}
+<h2>Item #{{ item.id }} {{ ui.status_badge(item.status) }}</h2>
+{{ ui.detail("template_items", item, [("Title", "title"), ("Contact", "contact_email"), ("Owner", "owner"), ("Version", "version")], user) }}
+{% if item.status == "OPEN" and user.has_role('engineer') %}
+  {{ ui.action_form("/%s/%d/complete"|format(tool, item.id), "Mark done", item) }}
+{% endif %}
+<h3>Audit trail</h3>
+{{ ui.audit_trail(trail) }}
+{% endblock %}

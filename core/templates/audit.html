@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% import "macros.html" as ui %}
+{% block title %}Audit log{% endblock %}
+{% block content %}
+<h2>Audit log</h2>
+<p>Append-only, across every tool. Each event is written in the same database transaction as the change it records.
+Protected values are stored masked.</p>
+<form method="get" class="grid">
+  <select name="entity"><option value="">All records</option>{% for e in entities %}<option {% if e == f_entity %}selected{% endif %}>{{ e }}</option>{% endfor %}</select>
+  <select name="actor"><option value="">All users</option>{% for a in actors %}<option {% if a == f_actor %}selected{% endif %}>{{ a }}</option>{% endfor %}</select>
+  <select name="action"><option value="">All actions</option>{% for a in actions %}<option {% if a == f_action %}selected{% endif %}>{{ a }}</option>{% endfor %}</select>
+  <button type="submit">Filter</button>
+</form>
+{{ ui.audit_trail(events, show_entity=True) }}
+{% endblock %}

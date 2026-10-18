@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Tools</h2>
+<p>Signed in as <strong>{{ user.display_name }}</strong> ({{ user.roles|sort|join(', ') }}).</p>
+<div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));">
+{% for t in tools %}
+  <article>
+    <header><strong>{% if user.has_role(*t.roles) %}<a href="{{ t.path }}">{{ t.name }}</a>{% else %}{{ t.name }}{% endif %}</strong></header>
+    <p>{{ t.description }}</p>
+    <footer><small>{% if user.has_role(*t.roles) %}You have access{% else %}No access. Needs: {{ t.roles|join(', ') }}{% endif %}</small></footer>
+  </article>
+{% endfor %}
+</div>
+{% endblock %}

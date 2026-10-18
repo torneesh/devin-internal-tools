@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% import "macros.html" as ui %}
+{% block title %}Refund #{{ refund.id }}{% endblock %}
+{% block content %}
+<hgroup>
+  <h2>Refund #{{ refund.id }} {{ ui.status_badge(refund.status) }}</h2>
+  <p><a href="/refunds">← All refunds</a></p>
+</hgroup>
+
+<div class="grid">
+  <article>
+    {{ ui.detail("refunds", refund, [
+         ("Transaction", "txn_id"), ("Customer", "customer_name"), ("Bank account", "bank_account"),
+         ("Amount", "amount_cents"), ("Reason", "reason"), ("Requested by", "requested_by"),
+         ("Idempotency key", "idempotency_key"), ("Provider ref", "provider_ref"),
+         ("Provider note", "provider_note"), ("Rejection reason", "decision_reason"), ("Version", "version")], user) }}
+  </article>
+  <article>
+    <header><strong>Approvals ({{ refund.approvals|length }} of {{ required }} required)</strong></header>
+    <ul>
+      {% for a in refund.approvals %}<li>{{ a.approver }} <small>at {{ a.created_at|dt }}</small></li>
+      {% else %}<li>None yet</li>{% endfor %}
+    </ul>
+    {% if refund.amount_cents > 100000 %}<small>Over $1,000: needs two different approvers.</small>{% endif %}
+
+    <hr>
+    <strong>Actions</strong>
+    <div class="actions" style="margin-top:.5rem">
+      {% if refund.status == "REQUESTED" and user.has_role('refund_approver') %}
+        {{ ui.action_form("/refunds/%d/approve"|format(refund.id), "Approve", refund) }}
+        {{ ui.action_form("/refunds/%d/reject"|format(refund.id), "Reject", refund,
+             [{"name": "reason", "label": "Rejection reason", "required": True}], kind="secondary") }}
+      {% endif %}
+      {% if flow.can(refund.status, "SUBMITTED") and user.has_role('refund_approver') %}
+        {{ ui.action_form("/refunds/%d/execute"|format(refund.id),
+             "Retry payment (same key)" if refund.status == "UNKNOWN" else "Execute payment", refund) }}
+      {% endif %}
+      {% if refund.status == "UNKNOWN" and user.has_role('refund_approver') %}
+        {{ ui.action_form("/refunds/%d/reconcile"|format(refund.id), "Reconcile with provider", refund, kind="contrast") }}
+      {% endif %}
+    </div>
+
+    {% if refund.status in ("REQUESTED", "APPROVED", "UNKNOWN") and user.has_role('support_agent', 'refund_approver') %}
+    <hr>
+    <small><strong>Demo:</strong> how the mock payment provider behaves for this refund</small>
+    {{ ui.action_form("/refunds/%d/mode"|format(refund.id), "Set mode", refund,
+         [{"name": "mode", "label": "Provider mode", "options": modes, "value": refund.provider_mode}], kind="outline") }}
+    {% endif %}
+  </article>
+</div>
+
+<h3>Audit trail</h3>
+{{ ui.audit_trail(trail) }}
+{% endblock %}

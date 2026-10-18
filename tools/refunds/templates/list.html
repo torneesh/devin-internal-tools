@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% import "macros.html" as ui %}
+{% block title %}Refunds{% endblock %}
+{% block content %}
+<hgroup>
+  <h2>Refunds</h2>
+  <p>Refunds over $1,000 need two different approvers. Nobody can approve a refund they requested.</p>
+</hgroup>
+<div class="actions">
+  <form method="get" class="action-form">
+    <select name="status" aria-label="Status">
+      <option value="">All statuses</option>
+      {% for s in statuses %}<option {% if s == status %}selected{% endif %}>{{ s }}</option>{% endfor %}
+    </select>
+    <button type="submit" class="secondary">Filter</button>
+  </form>
+  {% if user.has_role('support_agent') %}<a href="/refunds/new" role="button">New refund request</a>{% endif %}
+</div>
+{{ ui.data_table(refunds,
+     [("#", "id"), ("Transaction", "txn_id"), ("Customer", "customer_name"), ("Bank account", "bank_account"),
+      ("Amount", "amount_cents"), ("Status", "status"), ("Requested by", "requested_by"), ("Created", "created_at")],
+     entity="refunds", link="/refunds") }}
+{% endblock %}
