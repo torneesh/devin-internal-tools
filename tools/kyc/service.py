@@ -41,6 +41,16 @@ VIEW_ROLES = (*ANALYST_ROLES, *SUPERVISOR_ROLES, "auditor")
 QUEUES = ("all", "open", "mine", "escalated", "closed")
 
 
+def can_reveal_pii(db: Session | None, user: CurrentUser, case: KycCase) -> bool:
+    """Masking hook for government_id / date_of_birth (after the role check in core.masking).
+
+    Supervisors may reveal on any case; analysts only on a case they currently hold.
+    """
+    if user.has_role(*SUPERVISOR_ROLES):
+        return True
+    return case.status == IN_REVIEW and case.assigned_to == user.username
+
+
 def list_cases(db: Session, user: CurrentUser, queue: str = "all") -> list[KycCase]:
     ensure_role(user, *VIEW_ROLES)
     query = select(KycCase).order_by(KycCase.id)

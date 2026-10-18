@@ -40,6 +40,7 @@
     </div>
     {% if case.status == "IN_REVIEW" and not is_claimant %}<p><small>Claimed by {{ case.assigned_to }}. Only they can decide it.</small></p>{% endif %}
     {% if case.status == "ESCALATED" and not user.has_role('kyc_supervisor') %}<p><small>Waiting for a KYC supervisor.</small></p>{% endif %}
+    {% if user.has_role('kyc_analyst') and not user.has_role('kyc_supervisor') and not is_claimant %}<p><small>Claim this case to reveal the full government ID and date of birth.</small></p>{% endif %}
     {% if case.document_status != "UPLOADED" and case.status in ("IN_REVIEW", "ESCALATED") %}<p><small>Documents are {{ case.document_status }}: the case can't be approved until they're uploaded.</small></p>{% endif %}
   </article>
 </div>

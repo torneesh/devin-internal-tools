@@ -284,7 +284,7 @@ def test_every_mutation_audited(db, user):
     [("government_id", GOV_ID, "••••7766"), ("date_of_birth", DOB, "1990-••-••")],
 )
 def test_protected_field_masked_and_reveal_audited(db, user, login, field, raw, masked):
-    case = new_case(db, user)
+    case = claimed_case(db, user, "dave")
     client = login("dave")
     for url in ("/kyc", f"/kyc/{case.id}"):
         html = client.get(url).text
@@ -318,3 +318,43 @@ def test_flash_and_trail_never_show_raw_values(db, user, login):
     assert response.status_code == 200
     assert GOV_ID not in response.text and DOB not in response.text
     assert GOV_ID not in login("ivan").get("/audit").text
+
+
+@pytest.mark.parametrize("field", ["government_id", "date_of_birth"])
+def test_analyst_can_reveal_only_on_case_they_hold(db, user, login, field):
+    def reveal(name, case):
+        url = f"/reveal/kyc_cases/{case.id}/{field}"
+        return login(name).post(url, data={"reason": "Checking against scan"}).status_code
+
+    def has_reveal_button(name, case):
+        return (
+            f'hx-post="/reveal/kyc_cases/{case.id}/{field}"'
+            in login(name).get(f"/kyc/{case.id}").text
+        )
+
+    case = new_case(db, user)
+    assert reveal("dave", case) == 403 and not has_reveal_button("dave", case)  # OPEN
+    case = service.claim(db, user("dave"), case.id, case.version)
+    assert reveal("dave", case) == 200 and has_reveal_button("dave", case)
+    assert reveal("heidi", case) == 403 and not has_reveal_button("heidi", case)
+    assert reveal("erin", case) == 200 and has_reveal_button("erin", case)  # supervisor: any case
+
+    case = service.escalate(db, user("dave"), case.id, case.version, "Unsure")
+    assert reveal("dave", case) == 403  # no longer holds it
+    assert reveal("erin", case) == 200
+
+    released = claimed_case(db, user, "heidi")
+    released = service.release(db, user("heidi"), released.id, released.version)
+    assert reveal("heidi", released) == 403
+
+    reveals = [e for e in audit.trail(db, service.ENTITY, case.id) if e.action == "reveal"]
+    assert [e.actor for e in reveals] == ["dave", "erin", "erin"]  # denied attempts not logged
+
+
+def test_can_reveal_pii_hook(db, user):
+    case = new_case(db, user)
+    assert service.can_reveal_pii(db, user("erin"), case)
+    assert not service.can_reveal_pii(db, user("dave"), case)
+    case = service.claim(db, user("dave"), case.id, case.version)
+    assert service.can_reveal_pii(db, user("dave"), case)
+    assert not service.can_reveal_pii(db, user("heidi"), case)
