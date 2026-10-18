@@ -57,6 +57,24 @@ def show(title, a):
         print(f"{k:<8}" + "".join(f"{x/1000:>9.0f}K" for x in v) + f"{sum(v)/1000:>10.0f}K")
 
 
+def eng_weeks(a):
+    """Engineering weeks per year, i.e. the opportunity cost in engineer time."""
+    W = a["eng_weeks_per_year"]
+    out, apps = {"buy": [], "build": []}, 3
+    for y in range(3):
+        new = a["new_apps_by_year"][y]
+        maint = apps * a["maint_weeks_per_app_year"]
+        out["buy"].append(new * a["weeks_per_app"]["buy"] + maint + a["pp_admin_fte"] * W)
+        b = new * a["weeks_per_app"]["build"] + maint + a["platform_owner_fte"] * W
+        if y < a["build_license_years"]:
+            b += a["pp_admin_fte"] * W
+        if y == 0:
+            b += a["platform_build_weeks"] + a["migrate_existing_weeks"]
+        out["build"].append(b)
+        apps += new
+    return out
+
+
 if __name__ == "__main__":
     base = ASSUMPTIONS
     show("BASE", base)
@@ -66,3 +84,6 @@ if __name__ == "__main__":
          {**base, "platform_owner_fte": 1.0, "weeks_per_app": {**base["weeks_per_app"], "build": 3.0},
           "platform_build_weeks": 16})
     show("Devin Enterprise at $100K/yr", {**base, "devin_per_year": 100_000})
+    print("\nEngineering time (eng-weeks / FTE per year, base case)")
+    for k, v in eng_weeks(base).items():
+        print(f"{k:<8}" + "".join(f"{w:>7.1f}wk ({w/base['eng_weeks_per_year']:.2f} FTE)" for w in v))

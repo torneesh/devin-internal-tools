@@ -20,11 +20,13 @@ Second, logic beyond the building blocks. Refunds is the worked example. Alice r
 **[2:25 | demo: PRs from child sessions]**
 Third, and most important: the tool factory. I gave two brand-new Devin sessions one paragraph each, in business language only: a KYC review queue and a feature-flag admin. I never mentioned audit, masking or roles. They ran in parallel, took [X] and [Y] minutes, and opened these PRs. [show diff] They used the platform's audit, roles and masking because the repo's rules file told them to. [Be honest:] Here's what I had to fix in review: [Z]. That review step is your control point.
 
-**[3:05 | slide: cost table]**
-On cost: modest, and conditional. Over three years, about $1.2 million to keep buying versus $1.04 million to build. Year one is more expensive to build because the licence keeps running until renewal; after that, you run at roughly half. Two things matter. Premium covers unlimited apps, so new tools don't raise your bill; **new users do.** And the hybrid, building code on top of Power Apps, costs the most in every scenario I modelled.
-
-**[3:30 | slide: risks]**
-The risks: you'd own sign-in, PII handling and audit integrity, so build them once and get them pen-tested. Thirteen tools need an owner, roughly half an engineer, with Devin doing upgrades as PRs. AI-written code touching money gets reviewed and tested like any other code. And your ops teams lose self-service edits; requests go through Devin and an engineer instead.
+**[3:05 | slide: evaluation scorecard]**
+So, honestly: where is this better, and where isn't it?
+**Build cost:** Power Apps wins upfront. There's no platform to build, and for simple forms it's as fast. Devin wins on each custom tool and on running cost: about $212K a year versus $421K by year three. Over three years, $1.04 million versus $1.2 million, though year one costs more because the licence runs until renewal.
+**Maintenance:** Microsoft patches and hosts Power Apps; with Build, that's yours, roughly half an engineer to own it. But across thirteen tools, real code with tests, plus Devin doing upgrades, is easier to maintain than thirteen canvas apps.
+**Security:** Power Apps is safer by default. Build can match it and fit your SDLC, but only with discipline: a pen test, mandatory tests, and a human reviewing every Devin PR.
+**Engineering time** is the strongest argument for buying: Build costs about two-thirds of an engineer more in year one, and a fifth of one ongoing.
+Net: you're trading about $200K a year of licence for a fifth of an engineer and owning the security surface.
 
 **[4:00 | slide: what flips it]**
 What would change my mind: if your next ten tools are mostly simple forms, if the licence is really under about $185K, if your ops staff build these tools themselves today, or if nobody can own the platform. Then keep Power Apps.

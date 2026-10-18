@@ -54,25 +54,17 @@ The point isn't refunds specifically. It's that the next tool's odd requirement 
 
 **Honest framing:** show any corrections needed in review. That's realistic, and it's the control point.
 
-## Cost: modest, conditional, scales with users (3:05–3:30)
-| 3-year (base case) | Buy | Build |
+## Honest evaluation: where Devin is better and where it isn't (3:05–4:00)
+Full detail: `docs/EVALUATION.md`.
+
+| Dimension | Power Apps better | Devin-built better |
 |---|---|---|
-| Total | $1.20M | $1.04M |
-| Year 1 | $375K | $595K (licence runs until renewal) |
-| Year 3 run-rate | $421K | $212K |
+| **Build cost** | Upfront: no platform to build (Build needs ~12.5 eng-weeks + a pen test). Simple forms/CRUD | Each *custom* tool: no connectors or workarounds. Running cost ~$212K vs $421K/yr by Y3; 3-yr $1.04M vs $1.20M (Y1 is +$220K for Build) |
+| **Maintenance** | Platform: Microsoft hosts, patches, attests | Apps at 13+: tests, code review, Devin does upgrades across every tool. Still needs a ~0.5 FTE owner |
+| **Security** | **Safe by default**: SSO, DLP, column security and audit are configuration | Fits their SDLC and runs in their infrastructure, but **only with discipline**: pen test, branch protection, mandatory rule tests, review of every Devin PR. Devin itself needs a vendor review |
+| **Engineering time** | **~0.65 FTE less in Y1, ~0.2 FTE less ongoing.** The strongest argument for Buy | Licence savings (~$200K/yr) roughly fund one engineer; complex Power Apps work consumes engineers anyway |
 
-- **Break-even:** licence above ~$185K/yr with user growth, or ~$225K flat.
-- Premium covers unlimited apps, so **new tools don't raise the licence; new users do.**
-- Hybrid (Power Apps code apps built by Devin) costs the most in every scenario: a transition at best.
-
-## Risks, said out loud (3:30–4:00)
-| Risk | Mitigation |
-|---|---|
-| You own SSO, PII handling and audit integrity | Built once in the platform; external pen test; Devin Enterprise if SSO/data residency is required |
-| 13+ tools to maintain | One platform, one owner (~0.5 FTE); Devin does upgrades and fixes as PRs |
-| AI-written code touching money/PII | Every change is a reviewed PR; platform rules + mandatory tests; branch protection |
-| Ops staff lose self-service edits | Requests go via Slack/Jira → Devin drafts the PR → an engineer approves. Slower than self-serve; trade-off made explicit |
-| Year 1 costs more | Migrate before renewal; gate on measured phase-1 numbers |
+> **Net:** Build trades ~$200K/yr of licence for ~0.2 FTE of extra engineering and ownership of the security surface. Worth it only if the next tools are mostly custom and the licence really scales with users. Phase 1 exists to measure exactly that.
 
 ## What would flip this to Buy (4:00–4:15)
 - **The next 10 tools are mostly simple forms/CRUD.** Building blocks are as fast and need no owner.
