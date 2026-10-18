@@ -1,0 +1,100 @@
+{# Shared UI building blocks. Import with: {% import "macros.html" as ui %} #}
+
+{% macro status_badge(status) -%}
+<mark class="status status-{{ status|lower }}">{{ status }}</mark>
+{%- endmacro %}
+
+{# A protected field: always masked; "Reveal" (reason required, audited) for permitted roles. #}
+{% macro masked_field(entity, obj, field, user) -%}
+<span id="mf-{{ entity }}-{{ obj.id }}-{{ field }}" class="masked">
+  <code>{{ mask_value(entity, field, obj[field]) }}</code>
+  {%- if can_reveal(entity, field, user) %}
+  <details>
+    <summary role="button" class="outline secondary">Reveal</summary>
+    <form hx-post="/reveal/{{ entity }}/{{ obj.id }}/{{ field }}"
+          hx-target="#mf-{{ entity }}-{{ obj.id }}-{{ field }}" hx-swap="outerHTML">
+      <fieldset role="group">
+        <input name="reason" placeholder="Reason (recorded in audit log)" required minlength="5">
+        <button type="submit">Reveal</button>
+      </fieldset>
+    </form>
+  </details>
+  {%- endif %}
+</span>
+{%- endmacro %}
+
+{# One value, formatted by convention: status badge, masked if protected, *_cents as money. #}
+{% macro cell(entity, row, field) -%}
+{%- set value = row[field] -%}
+{%- if field == "status" -%}{{ status_badge(value) }}
+{%- elif has_policy(entity, field) -%}<code>{{ mask_value(entity, field, value) }}</code>
+{%- elif field.endswith("_cents") -%}{{ value|money }}
+{%- elif field.endswith("_at") -%}{{ value|dt }}
+{%- elif value is none -%}
+{%- else -%}{{ value }}
+{%- endif -%}
+{%- endmacro %}
+
+{# columns: list of (label, field). The first column links to `link`/<id>. #}
+{% macro data_table(rows, columns, entity, link=None, empty="Nothing here yet.") %}
+<table class="striped">
+  <thead><tr>{% for label, field in columns %}<th>{{ label }}</th>{% endfor %}</tr></thead>
+  <tbody>
+  {% for row in rows %}
+    <tr>
+    {% for label, field in columns %}
+      <td>{% if loop.first and link %}<a href="{{ link }}/{{ row.id }}">{{ cell(entity, row, field) }}</a>{% else %}{{ cell(entity, row, field) }}{% endif %}</td>
+    {% endfor %}
+    </tr>
+  {% else %}
+    <tr><td colspan="{{ columns|length }}">{{ empty }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endmacro %}
+
+{# fields: list of (label, field). Protected fields get masked_field automatically. #}
+{% macro detail(entity, obj, fields, user) %}
+<dl class="detail">
+  {% for label, field in fields %}
+  <dt>{{ label }}</dt>
+  <dd>{% if has_policy(entity, field) %}{{ masked_field(entity, obj, field, user) }}{% else %}{{ cell(entity, obj, field) }}{% endif %}</dd>
+  {% endfor %}
+</dl>
+{% endmacro %}
+
+{# A POST button that carries the record version (stale writes get 409).
+   fields: list of dicts {name, label, required?, options?, value?} #}
+{% macro action_form(url, label, obj, fields=[], kind="") %}
+<form method="post" action="{{ url }}" class="action-form">
+  <input type="hidden" name="version" value="{{ obj.version }}">
+  {% for f in fields %}
+    {% if f.options %}
+    <select name="{{ f.name }}" aria-label="{{ f.label }}">
+      {% for o in f.options %}<option value="{{ o }}" {% if o == f.value %}selected{% endif %}>{{ o }}</option>{% endfor %}
+    </select>
+    {% else %}
+    <input type="{{ f.type or 'text' }}" name="{{ f.name }}" placeholder="{{ f.label }}" aria-label="{{ f.label }}"
+           value="{{ f.value or '' }}" {% if f.required %}required{% endif %}>
+    {% endif %}
+  {% endfor %}
+  <button type="submit" class="{{ kind }}">{{ label }}</button>
+</form>
+{% endmacro %}
+
+{% macro audit_trail(events, show_entity=False) %}
+<table class="audit striped">
+  <thead><tr><th>When (UTC)</th><th>Who</th><th>Action</th>{% if show_entity %}<th>Record</th>{% endif %}<th>Change</th><th>Reason</th></tr></thead>
+  <tbody>
+  {% for e in events %}
+    <tr>
+      <td>{{ e.at|dt }}</td><td>{{ e.actor }}</td><td>{{ e.action }}</td>
+      {% if show_entity %}<td>{{ e.entity }} #{{ e.entity_id }}</td>{% endif %}
+      <td>{{ e.before|changes(e.after) }}</td><td>{{ e.reason or "" }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="6">No audit events.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endmacro %}

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}New refund{% endblock %}
+{% block content %}
+<h2>New refund request</h2>
+<form method="post" action="/refunds">
+  <div class="grid">
+    <label>Transaction ID <input name="txn_id" required placeholder="TXN-12345"></label>
+    <label>Customer name <input name="customer_name" required></label>
+  </div>
+  <div class="grid">
+    <label>Bank account (IBAN) <input name="bank_account" required></label>
+    <label>Amount (USD) <input name="amount" required placeholder="125.00" inputmode="decimal"></label>
+  </div>
+  <label>Reason <textarea name="reason" required></textarea></label>
+  <button type="submit">Request refund</button>
+</form>
+{% endblock %}
