@@ -50,7 +50,7 @@ The point isn't refunds specifically. It's that the next tool's odd requirement 
   - **KYC review queue:** PII-heavy, case workflow.
   - **Feature-flag admin:** config, prod-restricted, rollback.
 - Both reuse sign-in, roles, audit and masking **without being told**. Both open PRs with passing tests. Elapsed time and the PRs are on screen.
-- **Total prototype time: under 2 hours** (logged). That includes the platform.
+- **Prototype time:** logged in `BUILD_LOG.md`, 14:21 start to 15:06 with all four PRs merged. Confirm the build session's total time before quoting a number.
 
 **Honest framing:** show any corrections needed in review. That's realistic, and it's the control point.
 

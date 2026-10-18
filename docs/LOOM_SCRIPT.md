@@ -8,16 +8,16 @@ You asked whether your team can use Devin to build internal tools instead of pay
 
 **[0:30 | slide: "What Power Apps sells"]**
 So what are you actually paying Microsoft for? It isn't drag-and-drop. It's **speed and governance, repeated across many tools.** A small team ships a tool in days, every tool gets sign-in, roles, field masking and audit for free, ops staff can edit simple apps themselves, and Microsoft runs and certifies the platform.
-The catch is that the building blocks run out. Custom logic, your own APIs, automated testing (Microsoft has deprecated its Test Engine), and scale: their own docs say large queries can silently return incomplete results. So: **can Devin match that speed and governance for any tool?** Here's what I built in under two hours.
+The catch is that the building blocks run out. Custom logic, your own APIs, automated testing (Microsoft has deprecated its Test Engine), and scale: their own docs say large queries can silently return incomplete results. So: **can Devin match that speed and governance for any tool?** Here's what I built with Devin.
 
 **[1:10 | demo: launcher → switch user]**
 First, governance built once. This is one shared platform. When I switch from a support agent to an approver, permissions change. This bank account is masked. To reveal it I have to give a reason, and that reason lands here, in an append-only audit log. Masking rules live in one file, so tool thirteen is as governed as tool one.
 
 **[1:45 | demo: refunds]**
-Second, logic beyond the building blocks. Refunds is the worked example. Alice requests $2,500 and can't approve her own refund. Bob approves, but it's over the threshold, so it needs a second, different approver. Now I execute, and the mock payment provider times out *after* accepting. We don't mark that "failed"; we mark it **unknown**. Reconcile checks with the provider and finds it paid. Retry, and it doesn't pay twice. [cut to test run] Each of those rules is a named test that runs on every PR.
+Second, logic beyond the building blocks. Refunds is the worked example. Alice requests $2,500 and can't approve her own refund. Bob approves, but it's over the threshold, so it needs a second, different approver. Now I execute, and the provider times out *after* accepting. That's not "failed"; it's **unknown**. Reconcile checks with the provider and finds it paid. Retry, and it doesn't pay twice. [cut to test run] Each of those rules is a named test that runs on every PR.
 
 **[2:25 | demo: PRs from child sessions]**
-Third, and most important: the tool factory. I gave two brand-new Devin sessions one paragraph each, in business language only: a KYC review queue and a feature-flag admin. I never mentioned audit, masking or roles. They ran in parallel, took [X] and [Y] minutes, and opened these PRs. [show diff] They used the platform's controls because the repo's rules file told them to. [Be honest:] Here's what I had to fix in review: [Z]. That review step is your control point.
+Third, and most important: the tool factory. I gave two brand-new Devin sessions one paragraph each, in business language only: a KYC review queue and a feature-flag admin. I never mentioned audit, masking or roles. They ran in parallel, and opened these PRs, with tests passing, in 6 and 8 minutes. [show diff] They used the platform's controls because the repo's rules file told them to. [Be honest:] Review found no code bugs, only decisions the paragraph didn't cover, like creating a flag pushing it to production. One review round each; both merged within 40 minutes. That review step is your control point.
 
 **[3:05 | slide: evaluation scorecard]**
 So, honestly, where is this better and where isn't it?

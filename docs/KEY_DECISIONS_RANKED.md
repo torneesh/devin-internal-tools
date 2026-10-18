@@ -41,7 +41,7 @@ Grouped by stage. A suggested one-page cut is at the bottom.
 **B2. The tool factory is the centrepiece: fresh Devin sessions, business-language prompts, no mention of controls.** **10/10**
 - *Why:* it's the only part of the prototype that tests the actual claim, "tools #4–#13 are cheap *and* governed." Leaving controls out of the prompts tests whether the repo's rules make them the default.
 - *Result (from PRs #2 and #3 and the review comments on them):*
-  - Both used `require_role`/`ensure_role`, `update_versioned`, `audit.record` and `StateMachine` on every action, without being asked. KYC also masked **date of birth**, which the prompt never mentioned; that came from `AGENTS.md` rule 4. Each PR opened 6–8 min after the platform PR merged.
+  - Both used `require_role`/`ensure_role`, `update_versioned`, `audit.record` and `StateMachine` on every action, without being asked. KYC also masked **date of birth**, which the prompt never mentioned; that came from `AGENTS.md` rule 4. Each reached a green-CI PR 6 and 8 min after launch, and merged after one review round at 30 and 38 min.
   - The review found no code defects, but it found **decisions the paragraph didn't cover**:
     - KYC: any analyst could reveal any case's ID. The fix (only the analyst holding the case can reveal) needed a per-record hook the platform didn't have. The session extended `core/masking.py`, declared it under rule 8, and added a core test.
     - Flags: an engineer creating a flag pushed OFF to **production**, which bypassed the release-manager rule. The session had raised this itself; it was fixed after review.

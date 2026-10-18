@@ -26,7 +26,7 @@ Numbers come from `analysis/cost_model.py` (base case) and Microsoft/Devin docs 
 | | Power Apps | Devin-built platform |
 |---|---|---|
 | One-off | ~$0 (already in place) | Platform hardening ~8 wk + migrating 3 apps ~4.5 wk (≈ $62K) + pen test ~$20K |
-| Per new tool | ~2 eng-weeks (assumption). **Faster for simple forms**; slower once it needs custom logic, connectors or workarounds | ~1.25 eng-weeks (assumption). Prototype evidence: platform + refunds built in <2h; factory tools built from one paragraph in [X]/[Y] min, plus review |
+| Per new tool | ~2 eng-weeks (assumption). **Faster for simple forms**; slower once it needs custom logic, connectors or workarounds | ~1.25 eng-weeks (assumption). Prototype evidence: factory tools went from one paragraph to a green-CI PR in 6 and 8 min, and were merged after one review round at 30 and 38 min (`docs/FACTORY_RESULTS.md`) |
 | Licence / tooling | ~$250K/yr; unlimited apps per Premium user, so **new tools are ~free and new users aren't** | Devin ~$10–30K/yr (Teams list $40/seat/mo + credits; Enterprise quote-only) + ~$15K hosting |
 
 **Verdict:** Power Apps is cheaper to start; Devin is cheaper per *complex* tool and much cheaper to run.
