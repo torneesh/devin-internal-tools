@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% import "macros.html" as ui %}
+{% block title %}KYC review queue{% endblock %}
+{% block content %}
+<hgroup>
+  <h2>KYC review queue</h2>
+  <p>Analysts claim a case, then approve, reject or escalate it with a reason. Only supervisors resolve escalated cases.</p>
+</hgroup>
+<div class="actions">
+  <nav>
+    <ul>
+      {% for q in queues %}
+      <li><a href="/kyc?queue={{ q }}" {% if q == queue %}aria-current="page"{% endif %}>{{ q|capitalize }}</a></li>
+      {% endfor %}
+    </ul>
+  </nav>
+  {% if user.has_role('kyc_supervisor') %}<a href="/kyc/new" role="button">New case</a>{% endif %}
+</div>
+{{ ui.data_table(cases,
+     [("#", "id"), ("Customer", "customer_name"), ("Date of birth", "date_of_birth"), ("Government ID", "government_id"),
+      ("Country", "country"), ("Documents", "document_status"), ("Status", "status"), ("Assigned to", "assigned_to"),
+      ("Created", "created_at")],
+     entity="kyc_cases", link="/kyc", empty="No cases in this queue.") }}
+{% endblock %}

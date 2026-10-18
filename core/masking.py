@@ -1,7 +1,8 @@
 """Field-level protection. Every sensitive field in every tool has one entry here.
 
 Values render masked everywhere (tables, detail pages, audit log). A user with a reveal role
-can see one value by giving a reason; each reveal is an audit event.
+can see one value by giving a reason; each reveal is an audit event. A policy can also limit
+reveals per record (e.g. only the analyst holding a case) with a `can_reveal(db, user, obj)` hook.
 Changing a policy below changes every page and tool that shows that field.
 """
 
@@ -13,7 +14,7 @@ from dataclasses import dataclass
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse
 from markupsafe import escape
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, object_session
 
 from core import audit
 from core.auth import CurrentUser, current_user
@@ -27,6 +28,8 @@ MIN_REASON_LENGTH = 5
 class Policy:
     mask: Callable[[str], str]
     reveal_roles: tuple[str, ...]
+    # Optional per-record check, run after the role check: (db, user, obj) -> bool.
+    can_reveal: Callable[[Session | None, CurrentUser, object], bool] | None = None
 
 
 def last4(value: str) -> str:
@@ -37,14 +40,30 @@ def redact_all(value: str) -> str:
     return "••••••"
 
 
+def year_only(value: str) -> str:
+    return value[:4] + "-••-••"
+
+
 def email(value: str) -> str:
     name, _, domain = value.partition("@")
     return f"{name[:1]}•••@{domain}" if domain else redact_all(value)
 
 
+def _kyc_case_holder(db: Session | None, user: CurrentUser, obj) -> bool:
+    from tools.kyc.service import can_reveal_pii  # lazy: core doesn't import tools at load time
+
+    return can_reveal_pii(db, user, obj)
+
+
 # "<table name>.<column>" -> Policy
 FIELD_POLICIES: dict[str, Policy] = {
     "refunds.bank_account": Policy(mask=last4, reveal_roles=("refund_approver",)),
+    "kyc_cases.government_id": Policy(
+        mask=last4, reveal_roles=("kyc_analyst", "kyc_supervisor"), can_reveal=_kyc_case_holder
+    ),
+    "kyc_cases.date_of_birth": Policy(
+        mask=year_only, reveal_roles=("kyc_analyst", "kyc_supervisor"), can_reveal=_kyc_case_holder
+    ),
     "template_items.contact_email": Policy(mask=email, reveal_roles=("engineer",)),
 }
 
@@ -60,9 +79,14 @@ def mask(entity: str, field: str, value) -> str:
     return policy.mask(str(value)) if policy else str(value)
 
 
-def can_reveal(entity: str, field: str, user: CurrentUser | None) -> bool:
+def can_reveal(entity: str, field: str, user: CurrentUser | None, obj=None) -> bool:
+    """Role check, plus the policy's per-record hook when `obj` is given (used by templates)."""
     policy = policy_for(entity, field)
-    return bool(policy and user and user.has_role(*policy.reveal_roles))
+    if not (policy and user and user.has_role(*policy.reveal_roles)):
+        return False
+    if obj is not None and policy.can_reveal is not None:
+        return bool(policy.can_reveal(object_session(obj), user, obj))
+    return True
 
 
 def redact(entity: str, data: dict | None) -> dict | None:
@@ -96,6 +120,8 @@ def reveal(
     obj = db.get(model_for(entity), entity_id)
     if obj is None:
         raise NotFound()
+    if policy.can_reveal is not None and not policy.can_reveal(db, user, obj):
+        raise PermissionDenied(f"You can't reveal {field} on this record.")
     audit.record(db, user, "reveal", entity, entity_id, after={"field": field}, reason=reason)
     db.commit()
     return str(getattr(obj, field))

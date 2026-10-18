@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}New KYC case{% endblock %}
+{% block content %}
+<h2>New KYC case</h2>
+<form method="post" action="/kyc">
+  <div class="grid">
+    <label>Customer name <input name="customer_name" required></label>
+    <label>Date of birth <input name="date_of_birth" type="date" required></label>
+  </div>
+  <div class="grid">
+    <label>Government ID number <input name="government_id" required autocomplete="off"></label>
+    <label>Country (ISO code) <input name="country" required maxlength="2" placeholder="GB"></label>
+    <label>Documents
+      <select name="document_status">
+        {% for s in document_statuses %}<option>{{ s }}</option>{% endfor %}
+      </select>
+    </label>
+  </div>
+  <button type="submit">Open case</button>
+</form>
+{% endblock %}

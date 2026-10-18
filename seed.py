@@ -25,6 +25,7 @@ USERS = [
     ("erin", "Erin (KYC supervisor)", ["kyc_supervisor"]),
     ("frank", "Frank (Engineer)", ["engineer"]),
     ("grace", "Grace (Release manager)", ["release_manager"]),
+    ("heidi", "Heidi (KYC analyst)", ["kyc_analyst"]),
     ("ivan", "Ivan (Auditor)", ["auditor"]),
     ("admin", "Admin", ROLES),
 ]
@@ -37,6 +38,7 @@ def seed(db: Session) -> None:
         db.add(User(username=username, display_name=display_name, roles=list(roles)))
     db.commit()
     seed_refunds(db)
+    seed_kyc(db)
     seed_flags(db)
 
 
@@ -72,6 +74,38 @@ def seed_refunds(db: Session) -> None:
         reason="Order cancelled before shipping",
     )
     service.approve(db, bob, ready.id, ready.version)
+
+
+def seed_kyc(db: Session) -> None:
+    from tools.kyc import service
+
+    dave, erin = load_user(db, "dave"), load_user(db, "erin")
+    cases = [
+        ("Liam O'Connor", "1988-03-14", "PA1234567", "IE", "UPLOADED"),
+        ("Sofia Rossi", "1992-11-02", "YA9876543", "IT", "UPLOADED"),
+        ("Kenji Tanaka", "1979-07-30", "TK5550123", "JP", "UNREADABLE"),
+        ("Amara Okafor", "2001-01-19", "A08812345", "NG", "MISSING"),
+        ("Lucas Martin", "1985-05-05", "18AB76543", "FR", "UPLOADED"),
+    ]
+    created = [
+        service.create_case(
+            db,
+            erin,
+            customer_name=name,
+            date_of_birth=dob,
+            government_id=gov_id,
+            country=country,
+            document_status=docs,
+        )
+        for name, dob, gov_id, country, docs in cases
+    ]
+    service.claim(db, dave, created[1].id, created[1].version)  # stays in dave's queue
+    escalated = service.claim(db, dave, created[2].id, created[2].version)
+    service.escalate(
+        db, dave, escalated.id, escalated.version, "Passport scan unreadable; possible tampering"
+    )
+    done = service.claim(db, dave, created[4].id, created[4].version)
+    service.approve(db, dave, done.id, done.version, "ID and selfie match; sanctions check clear")
 
 
 def seed_flags(db: Session) -> None:
