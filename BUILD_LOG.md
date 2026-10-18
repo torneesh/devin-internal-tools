@@ -16,3 +16,4 @@ No hard cap for this run (the user confirmed at kickoff). Timestamps are still l
 | 2026-10-18 14:32 | Review/merge A + B | KYC [PR #2](https://github.com/torneesh/devin-internal-tools/pull/2) opened, CI green (14:32:40, 6 min after launch). |
 | 2026-10-18 14:34 | Review/merge A + B | Flags [PR #3](https://github.com/torneesh/devin-internal-tools/pull/3) opened, CI green (14:34:35, 8 min after launch). README committed on `devin/1792333600-docs-factory` meanwhile. |
 | 2026-10-18 14:40 | Review/merge A + B | Round 1 review done on both PRs. No code defects. Three product decisions taken by the owner and sent back to the sessions (see `docs/FACTORY_RESULTS.md`). |
+| 2026-10-18 14:56 | Review/merge A + B | Flags round-2 fix verified (CI green, 60 tests) and [PR #3](https://github.com/torneesh/devin-internal-tools/pull/3) merged at 14:56:42. KYC still working on the claimant-only reveal (needs a `core/masking` hook). |

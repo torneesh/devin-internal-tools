@@ -18,7 +18,7 @@ Two fresh Devin sessions were launched in parallel from this repo's `main` at 14
 | Other platform pieces | `StateMachine` for case status, `ApprovalPolicy` for the self-resolve rule. | `StateMachine` for sync status. Flag service behind an `integrations` adapter with an in-memory mock, full-state pushes with revisions, FAILED + retry, late pushes ignored. |
 | `core/` changes | `FIELD_POLICIES` entries plus a 2-line `year_only` mask (declared in the PR). | None. |
 | Code defects found in review | None. | None. |
-| Needed fixing in review | See round 2 below. | See round 2 below. |
+| Needed fixing in review | See round 2 below. | 1 change: don't push production on create (the session had flagged it). Fixed in one round, 15 min. |
 
 ## What review had to fix (warts and all)
 
@@ -28,7 +28,9 @@ Round 1 (14:36 to 14:40): the parent reviewed both PRs and posted review comment
 2. **KYC: restrict reveal to the claimant.** As built, any analyst could reveal the ID on any case after giving a reason. The owner wants reveal limited to the analyst holding the case, with supervisors exempt. This needs a small `core/masking.py` hook (a per-record `can_reveal` check on `Policy`), which the session had deliberately avoided to stay out of `core/`.
 3. **Flags: don't push production on create.** Creating a flag (an engineer action) pushed OFF/0% to production. That conflicts with "production changes are restricted to release managers", and it would overwrite a live value if the flag service already knew the key. The session had flagged this itself. The fix: production stays unpushed until a release manager's first change.
 
-Round 2 (feedback sent 14:40): _pending_.
+Round 2 (feedback sent 14:40):
+- **Flags:** fix pushed at 14:55 ([ef3a4ea](https://github.com/torneesh/devin-internal-tools/commit/ef3a4ea)). Production starts `NOT_SET`, nothing is pushed on create, a release manager's first change is the first production push, retry is refused while unset, and the audit event records the first value as changed from "not set". Four new tests (60 total). The session also recorded its own browser test. One small follow-on decision surfaced: an explicit OFF/0% is accepted as the first production value because "not set" and OFF differ. Accepted in review. **Merged 14:56** (about 30 minutes from launch, including the review round and the owner's decision).
+- **KYC:** _pending_.
 
 ## Read-out for the pitch
 - Both sessions inherited every control in `AGENTS.md` without being told, and both opened PRs with green CI in under 10 minutes.
