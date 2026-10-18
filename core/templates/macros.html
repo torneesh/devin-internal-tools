@@ -8,7 +8,7 @@
 {% macro masked_field(entity, obj, field, user) -%}
 <span id="mf-{{ entity }}-{{ obj.id }}-{{ field }}" class="masked">
   <code>{{ mask_value(entity, field, obj[field]) }}</code>
-  {%- if can_reveal(entity, field, user) %}
+  {%- if can_reveal(entity, field, user, obj) %}
   <details>
     <summary role="button" class="outline secondary">Reveal</summary>
     <form hx-post="/reveal/{{ entity }}/{{ obj.id }}/{{ field }}"
