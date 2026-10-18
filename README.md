@@ -8,6 +8,7 @@ What's here:
 - **`tools/_template/`** and **[`AGENTS.md`](AGENTS.md)**: the starting point and the rules for every new tool.
 - **Factory-built tools**: a KYC review queue and a feature-flag admin. Fresh Devin sessions built them in parallel, each from one business paragraph with no mention of the platform. Results, including what had to be fixed in review, are in [`docs/FACTORY_RESULTS.md`](docs/FACTORY_RESULTS.md).
 - **[`BUILD_LOG.md`](BUILD_LOG.md)**: timestamps for every build block.
+- **Evaluation docs**: [`docs/EVALUATION.md`](docs/EVALUATION.md) (where each option is better), [`docs/COST_MODEL.md`](docs/COST_MODEL.md) (line-by-line costs, cash vs engineering time, owner-time scenarios; regenerate with `python analysis/cost_model.py`), [`docs/COMPLIANCE.md`](docs/COMPLIANCE.md) (fintech PII rules, what Power Apps covers and what the client owns either way) and [`docs/SUCCESS_METRICS.md`](docs/SUCCESS_METRICS.md) (how a pilot proves the engineering-time saving).
 
 ## Run it
 Requires Python 3.11.
@@ -98,5 +99,6 @@ This is a prototype, not a production platform.
 - **Integrations are mocks.** The payment provider and the flag service live in memory and reset when the app restarts (including the `--reload` in demo step 4), so flag pages can say SYNCED while the mock service is empty until the next push.
 - **Masking:** a policy change is a code change and a deploy, not an admin setting. A reveal returns the raw value to the browser, and there's no rate limit or approval step for reveals.
 - **No equivalent** of DLP policies, managed environments, deployment, monitoring or alerting. It hasn't had a pen test or a vendor security review. `docs/EVALUATION.md` sizes this work.
+- **Compliance:** no encryption at rest (a SQLite file), no retention and deletion schedule (AML's 5 years vs GDPR erasure), no data-subject export, no log-retention policy or SIEM feed. [`docs/COMPLIANCE.md`](docs/COMPLIANCE.md) lists what Power Apps covers and what the client owns on either option.
 - **Governance relies on discipline.** Controls are inherited only if each tool follows `AGENTS.md`. Review and the required rule tests are the control point, as `docs/FACTORY_RESULTS.md` shows. Branch protection and required reviewers aren't configured in this repo.
 - Out of scope by design: a drag-and-drop builder, pixel polish and mobile.

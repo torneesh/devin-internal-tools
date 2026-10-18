@@ -84,6 +84,17 @@ if __name__ == "__main__":
          {**base, "platform_owner_fte": 1.0, "weeks_per_app": {**base["weeks_per_app"], "build": 3.0},
           "platform_build_weeks": 16})
     show("Devin Enterprise at $100K/yr", {**base, "devin_per_year": 100_000})
-    print("\nEngineering time (eng-weeks / FTE per year, base case)")
-    for k, v in eng_weeks(base).items():
-        print(f"{k:<8}" + "".join(f"{w:>7.1f}wk ({w/base['eng_weeks_per_year']:.2f} FTE)" for w in v))
+    show("Devin at $10K/yr (a few Teams seats)", {**base, "devin_per_year": 10_000})
+    # Owner time is the biggest lever: Devin does the upkeep and the owner reviews its PRs.
+    owner_25 = {**base, "platform_owner_fte": 0.25}
+    owner_15 = {**base, "platform_owner_fte": 0.15}
+    optimistic = {**owner_15, "platform_build_weeks": 2, "migrate_existing_weeks": 1.5,
+                  "weeks_per_app": {**base["weeks_per_app"], "build": 0.5}}
+    show("Devin-run upkeep: owner 0.25 FTE", owner_25)
+    show("Devin-run upkeep: owner 0.15 FTE", owner_15)
+    show("Optimistic (owner 0.15, 2 wk platform, 1.5 wk migration, 0.5 wk/tool)", optimistic)
+    for title, a in (("base case", base), ("owner 0.25 FTE", owner_25), ("owner 0.15 FTE", owner_15),
+                     ("optimistic", optimistic)):
+        print(f"\nEngineering time (eng-weeks / FTE per year, {title})")
+        for k, v in eng_weeks(a).items():
+            print(f"{k:<8}" + "".join(f"{w:>7.1f}wk ({w/a['eng_weeks_per_year']:.2f} FTE)" for w in v))

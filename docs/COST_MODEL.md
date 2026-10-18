@@ -39,15 +39,61 @@ Script: `analysis/cost_model.py`. Every input is an editable assumption, and eve
 | Build goes badly (1 FTE owner, 3 wk/app, 16 wk platform) | **1,203** | 1,256 | 1,508 | |
 | Devin at $100K/yr (Enterprise guess) | 1,203 | 1,466 | 1,245 | |
 | Devin at $10K/yr (a few Teams seats) | 1,203 | 1,196 | **975** | |
+| Devin-run upkeep: owner 0.25 FTE | 1,203 | 1,256 | **862** | 538 / 155 vs 375 / 421 |
+| Devin-run upkeep: owner 0.15 FTE (~6 h/week reviewing Devin's PRs) | 1,203 | 1,256 | **794** | 514 / 132 vs 375 / 421 |
+| Optimistic (owner 0.15, 2 wk platform, 1.5 wk migration, 0.5 wk/tool) | 1,203 | 1,256 | **711** | 447 / 132 vs 375 / 421 |
 
 **Break-even:** Build beats Buy over 3 years only if the licence is above **~$185K/yr with user growth** or **~$225K/yr flat**. After migration, Build runs at **~$210–230K/yr vs ~$400K+ for Buy**, so it pays back the Y1 overlap in roughly 1–1.5 years. The longer the horizon, the better Build looks.
+
+## Base case, line by line (thousands of USD)
+1 eng-week = $5K; 1 FTE = $230K. New tools: 6 in Y1, 4 in Y2, 0 in Y3.
+
+| Line item | Buy Y1 | Buy Y2 | Buy Y3 | Build Y1 | Build Y2 | Build Y3 |
+|---|---|---|---|---|---|---|
+| Power Apps licence (+15%/yr) | 250 | 288 | 331 | 250 | – | – |
+| Power Platform admin (0.25 FTE) | 58 | 58 | 58 | 58 | – | – |
+| Building new tools (2.0 vs 1.25 wk each) | 60 | 40 | 0 | 38 | 25 | 0 |
+| Maintaining live tools (0.5 wk/tool/yr) | 8 | 23 | 33 | 8 | 23 | 33 |
+| Platform hardening (8 wk, one-off) | – | – | – | 40 | – | – |
+| Migrating the 3 existing apps (4.5 wk, one-off) | – | – | – | 23 | – | – |
+| Platform owner (0.5 FTE) | – | – | – | 115 | 115 | 115 |
+| Devin (placeholder) | – | – | – | 30 | 30 | 30 |
+| Hosting | – | – | – | 15 | 15 | 15 |
+| Pen test (extra scope) | – | – | – | 20 | 20 | 20 |
+| **Total** | **375** | **408** | **421** | **595** | **228** | **212** |
+| **Running total** | 375 | 783 | **1,203** | 595 | 823 | **1,035** |
+
+Build costs ~$220K more in Y1, ~$180–210K/yr less after that, and overtakes Buy around month 26.
+
+## Cash vs engineering time (base case, thousands of USD)
+Salaries are paid either way, so this split shows what really changes.
+
+| | Buy Y1 | Y2 | Y3 | Build Y1 | Y2 | Y3 |
+|---|---|---|---|---|---|---|
+| Cash to vendors (licence, Devin, hosting, pen test) | 250 | 288 | 331 | 315 | 65 | 65 |
+| Engineering time, valued at salary | 125 | 120 | 90 | 280 | 163 | 148 |
+| Engineering time in FTE | 0.54 | 0.52 | 0.39 | 1.22 | 0.71 | 0.64 |
+
+Buy's engineering cost is ~$335K over 3 years (admin, building and maintaining tools). Build cuts vendor cash from ~$300K/yr to ~$65K/yr and, in the base case, uses more engineer time.
+
+## Owner time is the biggest lever
+The half-time owner ($345K over 3 years) is Build's largest cost, and the one Devin can shrink most: it can write the upgrade, CVE, pen-test-fix and evidence-report PRs, leaving the owner to review them. The one-off build barely matters by comparison (cutting 12.5 weeks to 3.5 saves ~$45K).
+
+| Build scenario | 3-yr cost | Build FTE Y1 / Y2 / Y3 | Buy FTE Y1 / Y2 / Y3 |
+|---|---|---|---|
+| Base (owner 0.5 FTE) | $1,035K | 1.22 / 0.71 / 0.64 | 0.54 / 0.52 / 0.39 |
+| Owner 0.25 FTE | $862K | 0.97 / 0.46 / 0.39 | same |
+| Owner 0.15 FTE | $794K | 0.87 / 0.36 / 0.29 | same |
+| Optimistic (owner 0.15, 2 wk platform, 1.5 wk migration, 0.5 wk/tool) | $711K | 0.57 / 0.29 / 0.29 | same |
+
+At ~0.15 FTE of owner time, **Build needs fewer engineers than Buy from Y2**, not more. That's the claim the pilot has to prove; the metrics and gate are in `docs/SUCCESS_METRICS.md`.
 
 ## What this says
 1. **Hybrid is not a cost option.** It's the most expensive or tied in every scenario, because you pay the licence *and* for Devin and engineering. It only earns a place if Microsoft-run governance is a **hard compliance requirement**, or as a short **transition state**. As a destination, "have both" doesn't make financial sense.
 2. **So there are really two choices: Buy or Build.** Buy's real alternative isn't Hybrid. It's **Buy + optimise the licence**, which on these numbers beats Build over 3 years.
 3. **Build wins on cost only if three things hold:**
    - The licence really scales with ~1,000 users.
-   - The platform stays at ≤0.5 FTE to own.
+   - The platform stays at ≤0.5 FTE to own. This is the biggest lever: at 0.15 FTE (Devin does the upkeep, the owner reviews), Build is $794K.
    - Per-app effort stays low.
 
    If any one fails, Build loses. The cost case is **modest and conditional**. Build's stronger arguments are control, testability, one SDLC, and avoiding per-user pricing as ops grows.
@@ -57,6 +103,6 @@ Script: `analysis/cost_model.py`. Every input is an editable assumption, and eve
 ## Inputs to validate with the VP (they flip the result)
 1. Licence breakdown: Premium vs per-app, user count, renewal date.
 2. Expected ops headcount growth.
-3. Who would own the platform, and whether 0.5 FTE is realistic.
+3. Who would own the platform, and how many of their hours Devin can take on (measure it: `docs/SUCCESS_METRICS.md`).
 4. Current engineering time spent on Power Apps (admin, building, fixing).
 5. Whether security/compliance needs Devin Enterprise (SSO, dedicated deployment).
