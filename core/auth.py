@@ -1,7 +1,7 @@
-"""Mock SSO and role-based access.
+"""Sign-in and role-based access.
 
-The session cookie holds a username picked on /login (the "user switcher"). In production,
-replace `login_submit` with an OIDC callback (Entra ID / Okta) that maps IdP groups to roles.
+The session cookie holds a username. With SSO on (core/sso.py), only the OIDC callback sets it
+and roles come from IdP groups. Without SSO, /login is a mock user switcher for demos and tests.
 Everything downstream depends only on `current_user` / `require_role`, so nothing else changes.
 """
 
@@ -83,10 +83,16 @@ def require_role(*roles: str):
 router = APIRouter()
 
 
-@router.get("/login")
+def sso_enabled(request: Request) -> bool:
+    return getattr(request.app.state, "sso", None) is not None
+
+
+@router.get("/login", name="login_page")
 def login_page(request: Request, db: Session = Depends(get_db)):
     from core.ui import page
 
+    if sso_enabled(request):
+        return page(request, "login.html", sso=request.app.state.sso)
     return page(request, "login.html", users=list_users(db))
 
 
@@ -97,6 +103,8 @@ def login_submit(
     next: str = Form("/"),
     db: Session = Depends(get_db),
 ):
+    if sso_enabled(request):
+        raise PermissionDenied("User switching is disabled when SSO is on. Sign in with SSO.")
     user = load_user(db, username)
     if user is None:
         raise NotAuthenticated(f"Unknown user {username!r}")
@@ -109,5 +117,7 @@ def login_submit(
 
 @router.post("/logout")
 def logout(request: Request):
+    if sso_enabled(request):
+        return RedirectResponse("/auth/logout", status_code=303)
     request.session.clear()
     return RedirectResponse("/login", status_code=303)

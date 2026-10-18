@@ -1,5 +1,7 @@
 # Build Spec: Internal Tools Platform (Devin-built Power Apps alternative)
 
+> Original spec for the timed build. Added since: real OIDC SSO via Keycloak, Faker demo data and a Fluent-style shell. See the README for current behaviour.
+
 Read first: `docs/PITCH.md` (the argument this build supports) and `docs/PRODUCT_BRIEF.md`.
 **Hard cap: 2 hours from "go".** Log timestamps in `BUILD_LOG.md`. Scope is set by the pitch; anything not listed here doesn't get built.
 

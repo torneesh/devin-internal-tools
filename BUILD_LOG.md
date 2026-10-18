@@ -19,3 +19,14 @@ No hard cap for this run (the user confirmed at kickoff). Timestamps are still l
 | 2026-10-18 14:56 | Review/merge A + B | Flags round-2 fix verified (CI green, 60 tests) and [PR #3](https://github.com/torneesh/devin-internal-tools/pull/3) merged at 14:56:42. KYC still working on the claimant-only reveal (needs a `core/masking` hook). |
 | 2026-10-18 15:04 | Review/merge A + B | KYC round-2 fix verified locally (90 tests, lint clean) and [PR #2](https://github.com/torneesh/devin-internal-tools/pull/2) merged at 15:04:07. Both factory tools are on `main`. |
 | 2026-10-18 15:06 | Docs | `docs/FACTORY_RESULTS.md` finished, README updated for the merged tools, docs branch merged with `main` and opened as a PR. |
+
+## Pass 2: real SSO, fake data, Power Apps-style shell
+Separate from the timed build above. Branch `devin/1792343517-sso-fake-data-ui`.
+
+| Time (UTC) | Block | Notes |
+|---|---|---|
+| 2026-10-18 17:11 | **Start** | Keycloak 26 in Docker Compose, realm generated from `seed.py` users, groups = roles. |
+| 2026-10-18 17:15 | SSO + fake data | OIDC sign-in end to end through Keycloak (bob, alice), group roles synced and audited. Faker seed: 48 refunds, 40 KYC cases, 13 flags across every status, created through the services so rules and audit apply. |
+| 2026-10-18 17:16 | Light restyle | Fluent-style header, role-filtered left menu and business-process stage bar on refund and KYC records, all in the shared templates. 94 tests, lint clean. |
+| 2026-10-18 17:42 | Verify + docs | Browser E2E run of every Loom-guide flow passed (PR #6 comment). Guide click paths and KYC reveal copy fixed. All docs updated for SSO, fake data and the new shell. |
+

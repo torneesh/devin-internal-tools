@@ -23,7 +23,7 @@ Coverage key:
 
 | # | Capability | Pri | Power Apps today | Prototype |
 |---|---|---|---|---|
-| 1 | SSO / identity | P0 | Entra ID native | **Partial**: mock login + role switcher; OIDC (Entra/Okta) seam |
+| 1 | SSO / identity | P0 | Entra ID native | **Partial**: real OIDC sign-in against a local Keycloak; IdP groups → roles, synced and audited at each sign-in; 8-hour session. Moving to Entra is configuration (issuer, client ID, secret). No SCIM deprovisioning or Conditional Access |
 | 2 | Role-based access (RBAC) | P0 | Security roles | **Build** |
 | 3 | Separation of duties / business rules (no self-approval; refunds > threshold need a 2nd, different approver; staging access ≠ prod access) | P0 | Approvals exist; **client still defines and enforces the rules** | **Build** |
 | 4 | Field-level protection (masked gov ID / bank details, audited "reveal", export limits) | P0 | Dataverse column security + masking | **Build** (mask + audited reveal); export control **Doc** |
@@ -42,7 +42,7 @@ Coverage key:
 
 *P2 unless the VP says ops staff build or edit apps today. If they do, this becomes a P0 and weighs heavily toward buy.
 
-**Coverage:** P0s are 6 of 7 built, 1 partial (SSO is a well-trodden library integration). P1s are 1 built, 4 partial, 2 doc/gap. P2s aren't replicated.
+**Coverage:** P0s are 6 of 7 built, 1 partial (SSO works over OIDC against a local Keycloak, not the client's Entra). P1s are 1 built, 4 partial, 2 doc/gap. P2s aren't replicated.
 
 ## The key point for the VP
 Most of the hard P0 work (#3, #6, #7) is **business logic the client must design and get right on either platform**. Power Apps gives them primitives, not answers. What Power Apps really takes off their plate is #1, #13 and #14: identity plumbing, citizen development, and running and attesting the platform. The build-vs-buy question is whether owning those is cheaper than ~$250K/yr once Devin lowers the cost of building, without creating a maintenance burden across 13+ apps.
