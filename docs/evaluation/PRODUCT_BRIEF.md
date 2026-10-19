@@ -37,7 +37,7 @@ Coverage key:
 | 12 | Reuse across 13+ tools (shared components, one security fix applies everywhere) | P1 | Component libraries | **Build**: shared platform module + `AGENTS.md`; proven by a fresh Devin session building the flag app |
 | 13 | Ops/business staff change tools themselves without engineering | P2* | Core low-code proposition | **Gap**: every change goes through an engineer reviewing a Devin PR |
 | 14 | Managed hosting, patching, Microsoft compliance attestations | P1 | Microsoft absorbs; client still owns app logic, access config, data, integrations | **Gap**: client owns hosting on their existing cloud |
-| 15 | Mobile / offline | P2 | Native player app | **Gap**: responsive web only |
+| 15 | Mobile / offline | P2 | Native player app | **Not out of the box**: responsive web only. A mobile app or offline mode is buildable, but extra work to build and maintain |
 | 16 | Ongoing ownership (who maintains app #9 when its author leaves) | P1 | Same problem, arguably worse with citizen devs | **Doc**: ownership model, not code |
 
 *P2 unless the VP says ops staff build or edit apps today. If they do, this becomes a P0 and weighs heavily toward buy.
@@ -49,12 +49,11 @@ Most of the hard P0 work (#3, #6, #7) is **business logic the client must design
 
 ## Prototype success criteria
 1. Each P0 rule has a passing test, e.g. a self-approval attempt is rejected, a stale save returns 409, and a retried refund executes once.
-2. A **fresh Devin session** given only a one-paragraph request builds the feature-flag admin. It inherits auth, audit, masking and state-transition patterns via `AGENTS.md` without being told, and opens a reviewable PR. Timed.
-3. Built within the 2-hour cap; elapsed time logged.
-4. Runs with one command; shown in under 5 minutes.
+2. A **fresh Devin session** given only a one-paragraph request builds the feature-flag admin. It inherits auth, audit, masking and state-transition patterns via `AGENTS.md` without being told, and opens a reviewable PR.
+3. Runs with one command; shown in under 5 minutes.
 
 ## Non-goals
-Pixel-perfect UI, a drag-and-drop builder, real SSO/payment/flag integrations, production deployment, a migration plan for existing Power Apps data.
+Pixel-perfect UI, a drag-and-drop builder, real payment/flag integrations (real OIDC sign-in was added later, against a local Keycloak), production deployment, a migration plan for existing Power Apps data.
 
 ## Open questions for the VP (these change the recommendation)
 1. How many users are on the license, and is it per-user, per-app or capacity licensing? Does cost grow with ops headcount?

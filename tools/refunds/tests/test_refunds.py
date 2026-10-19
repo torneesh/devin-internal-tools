@@ -1,4 +1,4 @@
-"""One test per refund rule (docs/BUILD_SPEC.md section 3)."""
+"""One test per refund rule (see the refunds section of the README)."""
 
 import pytest
 

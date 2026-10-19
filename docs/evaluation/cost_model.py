@@ -1,6 +1,6 @@
 """3-year cost model: Buy (Power Apps) vs Hybrid (Power Apps + Devin code apps) vs Build (in-house + Devin).
 
-Every number is an assumption; edit ASSUMPTIONS and re-run. Sources/notes in docs/COST_MODEL.md.
+Every number is an assumption; edit ASSUMPTIONS and re-run. Sources/notes in COST_MODEL.md (same folder). Run: python docs/evaluation/cost_model.py
 """
 
 ASSUMPTIONS = dict(
