@@ -1,5 +1,5 @@
 # PII compliance for a fintech: what's required, and does Power Apps cover it?
-Researched 2026-10-18 against Microsoft Learn, EUR-Lex and PCI DSS v4.0.1 material. Not legal advice.
+Researched against Microsoft Learn, EUR-Lex and PCI DSS v4.0.1 material. Not legal advice.
 
 **Short answer:** no platform "satisfies" a regulation for you. The regulated company is always responsible, and Microsoft says so itself: compliance is "a shared responsibility of cloud service providers and their customers". What Power Apps gives you is two things:
 - **Certified infrastructure.** Microsoft's audits cover the platform.
@@ -13,7 +13,7 @@ The parts regulators actually examine are the client's job on *either* option:
 
 So compliance doesn't make Power Apps win automatically. It makes Power Apps **cheaper to get to compliant** for simple apps, and it makes Build **more work to evidence**.
 
-> Not legal advice. We don't yet know where the client is licensed or whether it touches card numbers. That changes which regimes below apply. Sources are linked; items marked *(general knowledge)* weren't re-checked against primary sources this session.
+> Not legal advice. We don't yet know where the client is licensed or whether it touches card numbers. That changes which regimes below apply. Sources are linked; items marked *(general knowledge)* weren't re-checked against primary sources.
 
 ---
 

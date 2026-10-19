@@ -1,5 +1,5 @@
 # Power Apps research: what it does, what it costs, where it falls short
-Checked against Microsoft docs on 2026-10-17. ✅ = confirmed in docs; ⚠️ = caveat that matters for this client.
+Checked against Microsoft docs. ✅ = confirmed in docs; ⚠️ = caveat that matters for this client.
 
 ## 1. Pricing: what does $250K buy?
 - **Power Apps Premium: $20/user/month** (annual). **$12/user/month** with a 2,000-seat minimum. ([pricing](https://www.microsoft.com/en-us/power-platform/products/power-apps/pricing)) ✅

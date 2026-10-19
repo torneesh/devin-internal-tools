@@ -3,7 +3,7 @@
 ## Why owner time is the metric
 The base cost model budgets a half-time human platform owner ($115K/yr, the largest ongoing Build cost) for upgrades, pen-test fixes, access reviews, audit evidence and on-call. But Devin can **do** most of that work: dependency upgrades, CVE and pen-test fixes, access-review reports, audit-evidence exports and first-pass incident triage. The human role shrinks to **reviewing and approving**. So the owner's human hours are the number to measure, not a fixed cost.
 
-## What the owner assumption does to the answer (`analysis/cost_model.py`)
+## What the owner assumption does to the answer (`cost_model.py`)
 | Scenario | Build 3-yr | Build engineers/yr (Y1 / Y2 / Y3) | Buy engineers/yr |
 |---|---|---|---|
 | Base (0.5 FTE owner) | $1,035K | 1.22 / 0.71 / 0.64 | 0.54 / 0.52 / 0.39 |
@@ -27,9 +27,9 @@ Everything else supports this one number.
 | # | Metric | What it shows | How to measure | Proposed pilot target* |
 |---|---|---|---|---|
 | 1 | **Human hours per new tool** (writing the prompt, review, user acceptance testing) | Build speed | Engineers log review minutes on each PR (a PR label or one-line comment) | ≤ 16 h (vs ~80 h baseline) |
-| 2 | **Lead time:** request to production | Speed to the business | Ticket created → deploy timestamp | ≤ 1 week for a custom tool |
+| 2 | **Lead time:** request to production | Speed to the business | Ticket created → deployed | ≤ 1 week for a custom tool |
 | 3 | **Review rounds per Devin PR** | How good the first attempt is | GitHub API: reviews per PR | ≤ 1.5 average (the factory tools took 1) |
-| 4 | **Owner load:** human hours a month on platform ops | The real cost driver | Time log + PR review time on platform PRs | ≤ 25 h/month (~0.15 FTE) |
+| 4 | **Owner load:** human hours a month on platform ops | The real cost driver | Time log + PR review time on platform PRs | ≤ 10 h/week (~0.25 FTE); stretch ~6 h/week (~0.15 FTE) |
 | 5 | **% of maintenance done by Devin** (upgrades, CVEs, pen-test fixes, evidence reports) | Capacity freed | Share of maintenance PRs written by Devin | ≥ 70% |
 | 6 | **Time to patch** a critical CVE or pen-test finding | Security isn't traded away | Finding date → merged fix | ≤ 7 days |
 | 7 | **Escaped defects and control failures** | Quality holds | Incidents and audit exceptions per tool | 0 high-severity |
@@ -49,7 +49,7 @@ Everything else supports this one number.
 ## The pilot gate (the pass/fail line for dropping Power Apps)
 Build continues if, over the pilot:
 1. Human hours per tool are ≤ 20% of the baseline.
-2. Owner load is ≤ 0.15–0.25 FTE.
+2. Owner load is ≤ 10 h/week (~0.25 FTE). Break-even is ~0.8 FTE, so this is a clear saving, not just breaking even.
 3. There are no high-severity control failures.
 4. Devin spend is under 25% of the engineering cost it saved.
 
